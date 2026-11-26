@@ -586,4 +586,4 @@ Keep board backups, device-specific settings and calibration files out of the re
 
 MKS SERVO42C and the original firmware are associated with Makerbase. This project is an independent reconstruction and is not affiliated with or endorsed by the manufacturer. The reconstructed code, names and organization should not be mistaken for the manufacturer's original source release.
 
-The redistribution status of the vendor-derived code and assets is unknown. No license for those materials is asserted here. See [NOTICE.md](NOTICE.md). Keep the repository private until the applicable distribution permissions have been confirmed, including for the assembly reference and recovered test data.
+Thank you Makerbase for keeping us waiting for 5 years!!!
