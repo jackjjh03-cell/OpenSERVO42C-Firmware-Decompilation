@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Configure firmware",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "-S",
+        "${workspaceFolder}",
+        "-B",
+        "${workspaceFolder}/build/factory",
+        "-G",
+        "Ninja",
+        "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/arm-clang.cmake"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Build firmware",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build/factory"
+      ],
+      "dependsOn": "Configure firmware",
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Run firmware tests (host)",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build/factory",
+        "--target",
+        "verify"
+      ],
+      "dependsOn": "Build firmware",
+      "problemMatcher": []
+    }
+  ]
+}

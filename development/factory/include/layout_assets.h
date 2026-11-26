@@ -1,0 +1,91 @@
+#ifndef LAYOUT_ASSETS_H
+#define LAYOUT_ASSETS_H
+#include <stdint.h>
+#include "workspace_layout.h"
+extern unsigned char work_ram[];
+#define WORK_RAM(offset) ((uint32_t)(uintptr_t)(work_ram + (offset)))
+#define ASSET_ADDR(name,offset) ((uint32_t)(uintptr_t)((const unsigned char *)(name) + (offset)))
+#define TEXT_ADDR(name) ((uint32_t)(uintptr_t)(name))
+extern const char msg_startup_error[];
+extern const char msg_startup_line[];
+extern const char msg_startup_phase[];
+extern const char msg_startup_enter[];
+extern const char msg_startup_error_0f90[];
+extern const char msg_startup_encoder[];
+extern const char msg_startup_strong[];
+extern const char msg_startup_blank[];
+extern const char msg_startup_magnet[];
+extern const char msg_startup_weak[];
+extern const char msg_startup_loss[];
+extern const char msg_startup_type[];
+extern const char msg_startup_motor[];
+extern const char msg_startup_not_cal[];
+extern const char msg_protection_enter[];
+extern const char msg_protection_protect[];
+extern const char msg_protection_wrong[];
+extern const char msg_current_offset_error[];
+extern const char msg_current_offset_current[];
+extern const char msg_current_offset_offset[];
+extern const char msg_lookup_error[];
+extern const char msg_lookup_lookup[];
+extern const char msg_lookup_reverse[];
+extern const char msg_calibration_blank[];
+extern const char msg_calibration_cal[];
+extern const char msg_calibration_mode[];
+extern const char msg_calibration_cr_open[];
+extern const char msg_calibration_it_is[];
+extern const char msg_origin_mode_set[];
+extern const char msg_origin_mode_not[];
+extern const char msg_origin_mode_origin[];
+extern const char msg_origin_mode_disable[];
+extern const char msg_origin_mode_is[];
+extern const char msg_origin_mode_0_mode[];
+extern const char msg_origin_mode_mode[];
+extern const char msg_origin_mode_cr_open[];
+extern const char msg_origin_mode_it_is[];
+extern const char msg_version_v1_1_3[];
+extern const char msg_version_servo42c[];
+extern const char msg_version_mks[];
+extern const char msg_restore_blank[];
+extern const char msg_restore_ok[];
+extern const char msg_restore_reload[];
+extern const char msg_interpolation_error[];
+extern const char msg_interpolation_reboot[];
+extern const char msg_interpolation_dx_0[];
+extern const char msg_set_origin_done[];
+extern const char msg_set_origin_set[];
+extern const char msg_set_origin_origin[];
+extern const char msg_set_origin_disable[];
+extern const char msg_set_origin_is[];
+extern const char msg_set_origin_0_mode[];
+extern const char msg_set_origin_mode[];
+extern const char msg_set_origin_cr_open[];
+extern const char msg_set_origin_it_is[];
+extern const char msg_origin_failure_fail[];
+extern const char msg_origin_failure_origin[];
+extern const char msg_origin_failure_back_to[];
+extern const char msg_origin_progress_origin[];
+extern const char msg_origin_progress_back_to[];
+extern const char msg_origin_progress_coming[];
+extern const char msg_calibration_progress_blank[];
+extern const char msg_calibration_progress_cal[];
+extern const char msg_power_power[];
+extern const char msg_power_v[];
+extern const char msg_power_waiting[];
+extern const char msg_mode_enter[];
+extern const char msg_mode_error[];
+extern const char msg_mode_encoder[];
+extern const char msg_mode_strong[];
+extern const char msg_mode_blank[];
+extern const char msg_mode_magnet[];
+extern const char msg_mode_weak[];
+extern const char msg_mode_loss[];
+extern const char msg_mode_not_cal[];
+extern const uint8_t telemetry_messages[46];
+extern const int16_t sine_q14[1280];
+extern const uint8_t oled_font[1278];
+extern const uint32_t flash_timing_coefficients[8];
+extern const uint32_t oscillator_frequencies[4];
+extern const uint32_t uart_prescale_words[2];
+void initialize_factory_data(void);
+#endif

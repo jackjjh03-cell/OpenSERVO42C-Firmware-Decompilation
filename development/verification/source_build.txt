@@ -1,0 +1,11 @@
+Source maintenance build checks (Clang/LLD 17, Linux)
+PASS: all 52 C/header/linker files retain original non-comment lexical tokens.
+PASS: both source distributions contain identical firmware files and source manifests.
+PASS: independent CMake and direct Clang/LLD builds produce identical padded applications.
+Application SHA-256: 9c0922b0aedabd35c9b22596dd5e2902c3c63e9b1f0c4293bda754a3a381b4c7
+Application extent: 30428 bytes; available: 804 bytes.
+PASS: no unresolved symbols in either build.
+PASS: 270 function mappings and linked addresses checked after source formatting.
+PASS: stock defaults and 281 external C function declarations checked.
+PASS: source-edit test and deliberate flash/RAM overflow rejection.
+The application matches the earlier parity baseline; prior behavioral logs are retained, not freshly rerun. Windows IDE operation and physical hardware remain unverified.

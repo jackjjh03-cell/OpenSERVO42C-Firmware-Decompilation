@@ -1,0 +1,271 @@
+original_address,original_name,reconstructed_symbol,source_location,linked_address,classification,notes
+0x00C0,runtime_entry,reset_handler,factory/src/reset.c:18,0x4F38,semantic replacement / shared implementation,startup sequence combined with reset
+0x00C8,runtime_main_jump,reset_handler,factory/src/reset.c:18,0x4F38,semantic replacement / shared implementation,startup tail branch replaced by ordinary C call
+0x00D4,reset_handler,reset_handler,factory/src/reset.c:18,0x4F38,linked symbol,vector/startup replacement
+0x00EE,nmi_default,default_handler,factory/src/reset.c:9,0x4F34,linked symbol,original infinite-loop handler
+0x00F2,FUN_000000f2,default_handler,factory/src/reset.c:9,0x4F34,linked symbol,original infinite-loop handler
+0x00F4,FUN_000000f4,default_handler,factory/src/reset.c:9,0x4F34,linked symbol,original infinite-loop handler
+0x0110,udivmod32,unsigned_divmod_pair,factory/src/arithmetic_runtime.c:5,0x0618,semantic replacement / shared implementation,arithmetic semantic replacement
+0x013C,sdivmod32,signed_divmod_pair,factory/src/arithmetic_runtime.c:15,0x064A,semantic replacement / shared implementation,arithmetic semantic replacement
+0x0164,signed_divmod64_wrapper,div_small,factory/src/telemetry.c:41,0x5CC8,linked symbol,signed 64-bit division for actual bounded telemetry callers; not general ABI replacement
+0x01B0,FUN_000001b0,factory_multiply64,factory/src/arithmetic_runtime.c:29,0x0688,semantic replacement / shared implementation,arithmetic semantic replacement
+0x022A,FUN_0000022a,runtime_copy_forward,factory/src/runtime_memory.c:4,,"source present, not a separate linked symbol",Historical migration mapping; behavior not certified per entry.
+0x024E,FUN_0000024e,fill_bytes,factory/src/runtime_helpers.c:3,0x4F58,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x025C,FUN_0000025c,__aeabi_memclr4,factory/src/runtime_memory.c:39,0x4F8E,semantic replacement / shared implementation,zero fill semantic replacement; alignment/access pattern differs
+0x0260,FUN_00000260,runtime_memset,factory/src/runtime_memory.c:17,,"source present, not a separate linked symbol",Historical migration mapping; behavior not certified per entry.
+0x0272,FUN_00000272,factory_strlen,factory/src/boot_services.c:53,0x11B4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0280,FUN_00000280,string_copy,factory/src/runtime_helpers.c:11,0x4F66,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0292,FUN_00000292,div_small,factory/src/telemetry.c:41,0x5CC8,semantic replacement / shared implementation,internal 64-bit division folded into telemetry helper; not general ABI replacement
+0x02F2,FUN_000002f2,factory_multiply64,factory/src/arithmetic_runtime.c:29,0x0688,semantic replacement / shared implementation,original shared shift helper replaced by C expressions; no standalone entry
+0x0314,scatter_load_init,initialize_factory_data,factory/src/layout_startup_data.c:83,0x30F8,semantic replacement / shared implementation,scatter data replaced by explicit startup initializer
+0x0338,logical_shift_right64,div_small,factory/src/telemetry.c:41,0x5CC8,semantic replacement / shared implementation,original shift helper replaced by C expressions; no standalone entry
+0x035A,scatter_decompress,initialize_factory_data,factory/src/layout_startup_data.c:83,0x30F8,semantic replacement / shared implementation,original decompressor replaced by recovered data
+0x03BC,FUN_000003bc,startup_adc_irq,factory/src/current_feedback.c:51,0x2304,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x045C,FUN_0000045c,empty_045c,factory/src/empty_handlers.c:2,0x2900,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x0464,FUN_00000464,current_adc_irq,factory/src/current_feedback.c:159,0x2620,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0494,FUN_00000494,empty_0494,factory/src/empty_handlers.c:4,0x2902,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x049C,FUN_0000049c,empty_049c,factory/src/empty_handlers.c:6,0x2904,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x04A4,FUN_000004a4,empty_04a4,factory/src/empty_handlers.c:8,0x2906,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x04AC,FUN_000004ac,empty_04ac,factory/src/empty_handlers.c:10,0x2908,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x04B4,FUN_000004b4,empty_04b4,factory/src/empty_handlers.c:12,0x290A,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x04BC,FUN_000004bc,rotate_q14,factory/src/motor_math.c:24,0x3FB4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0548,FUN_00000548,empty_0548,factory/src/empty_handlers.c:14,0x290C,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x0550,FUN_00000550,empty_0550,factory/src/empty_handlers.c:16,0x290E,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x0558,FUN_00000558,scaled_difference_a,factory/src/motor_math.c:16,0x3F24,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x05A0,FUN_000005a0,scaled_difference_b,factory/src/motor_math.c:19,0x3F6C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x05E8,FUN_000005e8,empty_05e8,factory/src/empty_handlers.c:18,0x2910,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x05F0,FUN_000005f0,empty_05f0,factory/src/empty_handlers.c:20,0x2912,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x05F2,FUN_000005f2,empty_05f2,factory/src/empty_handlers.c:22,0x2914,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x05FA,FUN_000005fa,empty_05fa,factory/src/empty_handlers.c:24,0x2916,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x0602,FUN_00000602,empty_0602,factory/src/empty_handlers.c:26,0x2918,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x060A,FUN_0000060a,empty_060a,factory/src/empty_handlers.c:28,0x291A,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x0612,FUN_00000612,empty_0612,factory/src/empty_handlers.c:30,0x291C,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x061A,FUN_0000061a,empty_061a,factory/src/empty_handlers.c:32,0x291E,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x0622,FUN_00000622,empty_0622,factory/src/empty_handlers.c:34,0x2920,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x062A,FUN_0000062a,empty_062a,factory/src/empty_handlers.c:36,0x2922,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x0632,FUN_00000632,empty_0632,factory/src/empty_handlers.c:38,0x2924,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x063A,FUN_0000063a,empty_063a,factory/src/empty_handlers.c:40,0x2926,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x063C,FUN_0000063c,empty_063c,factory/src/empty_handlers.c:42,0x2928,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x0644,FUN_00000644,empty_0644,factory/src/empty_handlers.c:44,0x292A,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x064C,identity_transform_candidate,identity_transform,factory/src/identity.c:9,0x2F1C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x06BC,FUN_000006bc,adc_select_channel,factory/src/peripherals.c:3,0x42D4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0718,adc_clear_flags,adc_clear_flags,factory/src/peripherals.c:9,0x42FC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0728,FUN_00000728,adc_enable,factory/src/peripherals.c:12,0x430C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0738,adc_test_flags,adc_test_flags,factory/src/peripherals.c:15,0x431C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x074C,adc_read_result,adc_read_result,factory/src/peripherals.c:18,0x432C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0758,FUN_00000758,adc_startup_config,factory/src/startup_helpers.c:6,0x5564,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x07B0,adc_start,adc_start,factory/src/peripherals.c:21,0x4338,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x07BC,adc_stop,adc_stop,factory/src/peripherals.c:24,0x4344,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x07C8,FUN_000007c8,adc_interrupt_mask,factory/src/peripherals.c:27,0x4350,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x07E4,FUN_000007e4,adc_config_sequence,factory/src/peripherals.c:31,0x4368,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0824,FUN_00000824,register_config_50,factory/src/peripherals.c:37,0x43A8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x086C,FUN_0000086c,register_write_low16_or,factory/src/peripherals.c:44,0x43EC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x087A,FUN_0000087a,register_write_offset4,factory/src/peripherals.c:48,0x4400,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0880,FUN_00000880,register_start_50,factory/src/peripherals.c:52,0x4406,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x088C,FUN_0000088c,register_stop_50,factory/src/peripherals.c:56,0x4412,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0898,FUN_00000898,adc_power_on,factory/src/startup_helpers.c:15,0x55C0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x08B0,FUN_000008b0,timer_clear_all,factory/src/peripherals.c:60,0x4420,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x08C0,FUN_000008c0,timer_clear_flag,factory/src/peripherals.c:63,0x4430,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x08D8,FUN_000008d8,timer_test_flag,factory/src/peripherals.c:68,0x4450,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x08EC,FUN_000008ec,timer_write_count,factory/src/peripherals.c:73,0x446C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0908,FUN_00000908,factory_timer_reload,factory/src/peripherals.c:77,0x448C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0924,FUN_00000924,factory_timer_start,factory/src/peripherals.c:81,0x44AC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x093C,FUN_0000093c,factory_timer_stop,factory/src/peripherals.c:85,0x44C0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0954,FUN_00000954,timer_write_count_mode,factory/src/peripherals.c:89,0x44D4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0980,FUN_00000980,timer_write_compare,factory/src/peripherals.c:94,0x4504,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x09B4,FUN_000009b4,timer_reload_alias,factory/src/peripherals.c:100,0x4530,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x09D0,FUN_000009d0,timer_config_30,factory/src/peripherals.c:104,0x4550,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0A00,FUN_00000a00,timer_config_18,factory/src/peripherals.c:110,0x4580,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0A54,FUN_00000a54,timer_config_capture,factory/src/peripherals.c:117,0x45D0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0AF8,FUN_00000af8,timer_write_34,factory/src/peripherals.c:130,0x4674,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0B14,FUN_00000b14,timer_config_20,factory/src/peripherals.c:134,0x4690,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0B84,FUN_00000b84,timer_set_400,factory/src/peripherals.c:141,0x46E0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0BA0,FUN_00000ba0,timer_config_basic,factory/src/peripherals.c:145,0x46F8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0C28,FUN_00000c28,timer_config_extended,factory/src/peripherals.c:155,0x477C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0CC4,FUN_00000cc4,empty_0cc4,factory/src/empty_handlers.c:46,0x292C,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x0CCC,FUN_00000ccc,factory_generate_lut,factory/src/calibration_work.c:7,0x1278,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0D3C,FUN_00000d3c,factory_uart_tx_end,factory/src/peripherals.c:167,0x4810,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0D6C,FUN_00000d6c,clock_clear_field,factory/src/register_helpers.c:21,0x4920,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0D84,FUN_00000d84,clock_set_high_bit,factory/src/register_helpers.c:24,0x4934,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0D94,FUN_00000d94,clock_set_index_high_bit,factory/src/register_helpers.c:27,0x4948,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0DAC,FUN_00000dac,configure_indexed_clock_adc,factory/src/clock_adc_config.c:3,0x1604,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0E20,startup_diagnostics,factory_startup_diagnostics,factory/src/application_ui.c:84,0x0490,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x0FEC,FUN_00000fec,factory_irq_config,factory/src/boot_services.c:3,0x1050,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x106C,FUN_0000106c,empty_106c,factory/src/empty_handlers.c:48,0x292E,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x1078,FUN_00001078,flash_timing_setup,factory/src/boot_services.c:18,0x10C8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1120,FUN_00001120,flash_key_sequence,factory/src/remaining_helpers.c:33,0x4B30,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x113C,FUN_0000113c,factory_flash_erase_write,factory/src/interface.c:40,0x30DE,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1164,FUN_00001164,factory_flash_write,factory/src/interface.c:33,0x30B8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1188,FUN_00001188,flash_erase_page,factory/src/flash_driver.c:35,0x2E14,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1214,FUN_00001214,flash_clear_flags,factory/src/flash_driver.c:12,,"source present, not a separate linked symbol",Historical migration mapping; behavior not certified per entry.
+0x1234,FUN_00001234,flash_config_mode,factory/src/flash_driver.c:16,0x2DEC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1260,FUN_00001260,flash_program_halfword,factory/src/flash_driver.c:45,0x2E98,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x12F0,FUN_000012f0,read_halfword,factory/src/register_helpers.c:15,,"source present, not a separate linked symbol",Historical migration mapping; behavior not certified per entry.
+0x12F4,FUN_000012f4,read_word,factory/src/register_helpers.c:18,0x491C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x12F8,FUN_000012f8,reg_read_bit,factory/src/register_helpers.c:10,0x4908,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1304,FUN_00001304,gpio_clear_irq_field,factory/src/register_helpers.c:33,0x495C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1318,FUN_00001318,gpio_set_direction_bit,factory/src/register_helpers.c:37,0x4974,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x132C,FUN_0000132c,gpio_clear_indexed_field,factory/src/register_helpers.c:41,0x498C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1344,FUN_00001344,gpio_set_indexed_field,factory/src/register_helpers.c:45,0x49A8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x135C,FUN_0000135c,gpio_read_input_bit,factory/src/register_helpers.c:49,0x49C4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x136C,FUN_0000136c,gpio_read_irq_bit,factory/src/register_helpers.c:52,0x49D8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x137C,FUN_0000137c,gpio_config_pin,factory/src/pin_config.c:3,0x4838,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1408,FUN_00001408,gpio_write_pin_register,factory/src/register_helpers.c:55,0x49EC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x141C,FUN_0000141c,gpio_set_output_bit,factory/src/register_helpers.c:59,0x49FC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1430,FUN_00001430,gpio_clear_output_bit,factory/src/register_helpers.c:63,0x4A14,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1444,hardfault_handler,hardfault_handler,factory/src/reset.c:13,0x4F36,linked symbol,"original endless wait, timing differs"
+0x1454,FUN_00001454,status_bit0,factory/src/register_helpers.c:67,,"source present, not a separate linked symbol",Historical migration mapping; behavior not certified per entry.
+0x1464,FUN_00001464,status_bit1,factory/src/register_helpers.c:70,,"source present, not a separate linked symbol",Historical migration mapping; behavior not certified per entry.
+0x1474,FUN_00001474,hardware_divide,factory/src/current_feedback.c:92,0x2430,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x14B0,FUN_000014b0,empty_14b0,factory/src/empty_handlers.c:50,0x2930,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x14B8,FUN_000014b8,factory_oled_write,factory/src/board_io.c:56,0x0970,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1570,FUN_00001570,empty_1570,factory/src/empty_handlers.c:52,0x2932,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x1578,FUN_00001578,i2c_configure,factory/src/clock_and_bus.c:99,0x18D8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x15EC,__ARM_common_switch8,uart_dispatch,factory/src/commands.c:99,0x1948,semantic replacement / shared implementation,original shared compiler switch helper replaced by C switches; not standalone entry
+0x1608,FUN_00001608,reg_write_plus4,factory/src/register_helpers.c:73,0x4A2C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x160E,FUN_0000160e,reg_set_bit_plus8,factory/src/register_helpers.c:77,0x4A32,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x161C,FUN_0000161c,deferred_origin_return,factory/src/application_flow.c:55,0x0150,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x165C,FUN_0000165c,enable_input_irq,factory/src/control_flow.c:27,0x1F7C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x169A,scatter_zero_words,scatter_zero_words,factory/src/runtime_memory.c:23,,"source present, not a separate linked symbol",Historical migration mapping; behavior not certified per entry.
+0x16AC,FUN_000016ac,reg_write_bit,factory/src/register_helpers.c:4,0x48E8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x16C4,FUN_000016c4,spi_config_port,factory/src/pin_config.c:15,0x48C4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x16E4,systick_handler,empty_16e4,factory/src/empty_handlers.c:54,0x2934,original empty handler,Historical migration mapping; behavior not certified per entry.
+0x16EC,FUN_000016ec,clock_select_wait,factory/src/clock_and_bus.c:5,0x167C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x17E8,FUN_000017e8,factory_clock_frequency,factory/src/clock_and_bus.c:49,0x1740,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1924,FUN_00001924,peripheral_clock_frequency,factory/src/startup_helpers.c:56,0x56B0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x193C,FUN_0000193c,configure_clock_source,factory/src/board_startup.c:86,0x0CC0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1A20,FUN_00001a20,system_field15,factory/src/remaining_helpers.c:25,0x4AFC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1A40,FUN_00001a40,sys_gate_bit,factory/src/register_helpers.c:85,0x4A54,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1A54,FUN_00001a54,set_clock_divider,factory/src/board_startup.c:41,0x0B58,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1A7C,FUN_00001a7c,update_system_clock,factory/src/startup_helpers.c:60,0x56C8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1A8C,system_init,factory_system_init,factory/src/board_startup.c:107,0x0D98,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1B28,foreground_ui_protection,factory_foreground_ui,factory/src/application_ui.c:9,0x0288,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1CE0,FUN_00001ce0,motor_pwm_write,factory/src/current_feedback.c:106,0x2468,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1DF0,FUN_00001df0,startup_prepare,factory/src/startup_prepare.c:64,0x5850,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1F78,FUN_00001f78,deferred_origin_set,factory/src/application_flow.c:62,0x0194,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1FB8,FUN_00001fb8,timer2_clear_flag,factory/src/register_helpers.c:89,0x4A6C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1FCC,FUN_00001fcc,timer2_write_count,factory/src/register_helpers.c:94,0x4A88,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1FE4,FUN_00001fe4,timer2_write_reload,factory/src/register_helpers.c:98,0x4AA0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x1FFC,FUN_00001ffc,timer2_start,factory/src/register_helpers.c:102,0x4AB8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2010,FUN_00002010,timer2_configure,factory/src/board_startup.c:30,0x0AD4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2090,FUN_00002090,factory_refresh_mode,factory/src/control_flow.c:8,0x1F20,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x20E4,FUN_000020e4,reset_position_state,factory/src/mode_and_position.c:47,0x39AC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x21E0,FUN_000021e0,reg_set_bit_plus4,factory/src/register_helpers.c:81,0x4A42,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x21F0,FUN_000021f0,uart_configure,factory/src/boot_services.c:37,0x1154,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2280,FUN_00002280,initialize_port_masks,factory/src/board_startup.c:68,0x0C28,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x231C,FUN_0000231c,system_key_sequence,factory/src/remaining_helpers.c:29,0x4B18,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2334,uart_start_reply,uart_start_reply,factory/src/uart.c:84,0x5F3C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x239C,FUN_0000239c,start_feedback_capture,factory/src/board_io.c:22,0x089C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2410,FUN_00002410,adc_shutdown_chain,factory/src/current_feedback.c:81,0x23D0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2448,FUN_00002448,adc_startup_irq_enable,factory/src/current_feedback.c:87,0x2410,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2464,check_current_offsets,check_current_offsets,factory/src/current_feedback.c:12,0x21D0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x256C,FUN_0000256c,initialize_adc,factory/src/board_io.c:5,0x082C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x25F4,FUN_000025f4,clear_feedback_state,factory/src/motion_state.c:3,0x3EA8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2608,board_init,factory_board_init,factory/src/application_flow.c:43,0x0124,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2634,FUN_00002634,initialize_buttons,factory/src/board_startup.c:17,0x0A84,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x267C,load_calibration_knots,load_calibration_knots,factory/src/encoder.c:9,0x2954,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x26CC,encoder_lut_read,encoder_lut_read,factory/src/encoder.c:3,0x2938,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x26E8,encoder_inverse_lookup,encoder_inverse_lookup,factory/src/encoder.c:64,0x2A8C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x279C,FUN_0000279c,calibration_record_bounds,factory/src/encoder_io.c:80,0x2D88,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x27E8,update_multiturn_angle,update_multiturn_angle,factory/src/encoder.c:21,0x29B8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x286C,FUN_0000286c,enable_board_clocks,factory/src/application_flow.c:28,0x01D8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x28C8,FUN_000028c8,auxiliary_timer_irq,factory/src/auxiliary_timer.c:11,0x06C8,linked symbol,independent C port
+0x2A38,uart0_irq,uart0_irq,factory/src/uart.c:59,0x5E74,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2C2C,device_identity_check,factory_identity_check,factory/src/identity.c:23,0x2F88,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2CC0,application_main,application_main,factory/src/application_flow.c:7,0x00C0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2D34,menu_mode,menu_control_mode,factory/src/menu.c:127,0x3604,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2D84,zero_bytes,zero_bytes,factory/src/runtime_helpers.c:20,,"source present, not a separate linked symbol",Historical migration mapping; behavior not certified per entry.
+0x2D98,delay_100us_candidate,factory_delay_100us,factory/src/board_startup.c:61,0x0B80,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2DE8,delay_ms_candidate,factory_delay_ms,factory/src/board_startup.c:64,0x0BD4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2E38,calibration_request,factory_calibrate,factory/src/calibration_work.c:100,0x1580,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2EC4,menu_goto_0,factory_menu_goto_origin,factory/src/control_flow.c:76,0x2100,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x2FE0,display_banner,boot_banner,factory/src/remaining_helpers.c:105,0x4D54,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3040,FUN_00003040,restart_auxiliary_timer,factory/src/control_flow.c:33,0x1FB8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3052,FUN_00003052,factory_format_uint,factory/src/startup_helpers.c:41,0x5644,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x311C,FUN_0000311c,menu_poll_buttons,factory/src/menu_navigation.c:8,0x37B0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3220,FUN_00003220,render_telemetry,factory/src/telemetry.c:67,0x5AE8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x342C,FUN_0000342c,reset_compare_values,factory/src/remaining_helpers.c:38,0x4B4C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3470,FUN_00003470,set_phase_and_value,factory/src/motion_state.c:9,0x3ED0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3488,FUN_00003488,clear_timer_output_field,factory/src/remaining_helpers.c:44,0x4B84,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x34A4,FUN_000034a4,set_timer_output_field,factory/src/remaining_helpers.c:48,0x4BA4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x34C0,FUN_000034c0,calibration_step_reverse,factory/src/calibration_work.c:75,0x1484,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3534,FUN_00003534,calibration_step_forward,factory/src/calibration_work.c:67,0x1410,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x35A8,FUN_000035a8,initialize_motor_timers,factory/src/board_timer_display.c:10,0x0E38,linked symbol; verified startup context,"Original leftover stack bytes differ, but effective GPIO and ordered MMIO writes match in tested reset/board-init paths; not arbitrary caller or hardware equivalence."
+0x373A,abs32_candidate,abs_word,factory/src/runtime_helpers.c:23,0x4F74,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3744,FUN_00003744,scale_position,factory/src/motion_controller.c:42,0x3AC0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3818,FUN_00003818,inverse_rotate_q14,factory/src/motor_math.c:33,0x4034,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3890,FUN_00003890,current_control_update,factory/src/current_feedback.c:141,0x2588,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3938,menu_restore,factory_restore,factory/src/interface.c:24,0x3080,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3978,read_active_settings_record,read_active_settings_record,factory/src/settings.c:35,0x5148,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3A18,FUN_00003a18,factory_stop,factory/src/application_flow.c:71,0x0228,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3A8C,FUN_00003a8c,initialize_runtime_feedback,factory/src/startup_prepare.c:8,0x56DC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3B70,FUN_00003b70,clock_adc_stop,factory/src/remaining_helpers.c:52,0x4BC4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3B9C,FUN_00003b9c,clock_adc_set_bit19,factory/src/remaining_helpers.c:57,0x4BF0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3BB0,FUN_00003bb0,predict_phase,factory/src/remaining_helpers.c:111,0x4D7C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3C38,FUN_00003c38,feedback_difference,factory/src/motion_state.c:13,0x3EF0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3CAC,FUN_00003cac,reset_phase_state,factory/src/remaining_helpers.c:78,0x4CA0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3CC8,FUN_00003cc8,initialize_step_inputs,factory/src/startup_prepare.c:25,0x5740,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3DD4,FUN_00003dd4,step_input_disable,factory/src/remaining_helpers.c:85,0x4CD0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3E54,FUN_00003e54,step_input_enable,factory/src/remaining_helpers.c:91,0x4D00,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3E80,FUN_00003e80,read_enable_state,factory/src/remaining_helpers.c:72,0x4C58,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3ECC,FUN_00003ecc,calibration_interpolate,factory/src/encoder.c:53,0x2A50,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3F28,FUN_00003f28,fault_indicator_write,factory/src/remaining_helpers.c:60,0x4C04,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3F48,FUN_00003f48,fault_indicator_toggle,factory/src/remaining_helpers.c:64,0x4C20,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x3F84,FUN_00003f84,initialize_indicator,factory/src/clock_and_bus.c:74,0x1838,linked symbol,Explicit GPIO configuration replaces mismatched C signature; original preceding calls leave r2=1. Verified reset/board-init ordered MMIO writes.
+0x3FCC,menu_acc,menu_acceleration,factory/src/menu.c:142,0x3658,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x404C,menu_autosdd,menu_autosdd,factory/src/menu.c:4,0x3328,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4084,menu_uartbaud,menu_uart_baud,factory/src/menu.c:156,0x36A8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x41C8,menu_ma,menu_current,factory/src/menu.c:195,0x3760,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x420C,menu_dir,menu_direction,factory/src/menu.c:22,0x3394,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4244,menu_en,menu_enable,factory/src/menu.c:32,0x33D0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4274,menu_exit,menu_exit,factory/src/menu.c:41,0x3404,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4288,menu_mplyer,menu_interpolation,factory/src/menu.c:13,0x3360,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x42C0,menu_mstep,menu_microsteps,factory/src/menu.c:93,0x3540,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4360,menu_mottype,menu_motor_type,factory/src/menu.c:82,0x34FC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x439C,menu_uartaddr,menu_uart_address,factory/src/menu.c:45,0x341C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x43D0,menu_0_dir,menu_origin_direction,factory/src/menu.c:54,0x3450,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4400,menu_0_speed,menu_origin_speed,factory/src/menu.c:63,0x3484,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x442C,menu_0_mode,menu_origin_mode,factory/src/menu.c:72,0x34B8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4464,menu_protect,menu_protection,factory/src/menu.c:117,0x35C4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x44A8,menu_set_0,factory_menu_set_origin,factory/src/control_flow.c:56,0x2070,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4568,FUN_00004568,menu_request_redraw,factory/src/interface.c:16,0x3054,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4574,FUN_00004574,menu_select_table,factory/src/interface.c:19,0x3068,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4584,FUN_00004584,render_menu_rows,factory/src/remaining_helpers.c:125,0x4DFC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4660,FUN_00004660,select_settings_record,factory/src/settings.c:68,0x5258,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x46A0,FUN_000046a0,settings_slot_blank,factory/src/settings.c:79,0x528C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x46E0,FUN_000046e0,save_calibration_knots,factory/src/remaining_helpers.c:102,0x4D42,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x470C,commit_settings_record,factory_commit,factory/src/settings.c:128,0x53DC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4884,display_three_lines,display_three_lines,factory/src/display.c:79,0x2898,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x492C,FUN_0000492c,oled_initialize,factory/src/interface.c:7,0x3014,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4A00,FUN_00004a00,oled_flush_all,factory/src/display.c:17,0x2678,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4A2C,FUN_00004a2c,oled_clear_old_text,factory/src/display.c:23,0x26AC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4B70,FUN_00004b70,oled_render_text,factory/src/display.c:52,0x2780,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4C8C,FUN_00004c8c,initialize_display_bus,factory/src/board_timer_display.c:44,0x0F74,linked symbol; verified startup context,"Original leftover stack bytes differ, but effective GPIO and ordered MMIO writes match in tested reset/board-init paths; not arbitrary caller or hardware equivalence."
+0x4D64,FUN_00004d64,oled_set_position,factory/src/display.c:12,0x2654,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4D84,FUN_00004d84,factory_oled_command,factory/src/board_io.c:94,0x0A28,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4D94,FUN_00004d94,origin_failure_message,factory/src/control_flow.c:51,0x2044,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x4DC8,origin_return_candidate,origin_return,factory/src/origin.c:12,0x409C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5030,FUN_00005030,encoder_startup_status,factory/src/encoder_io.c:46,0x2C98,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x505C,FUN_0000505c,initialize_encoder_bus,factory/src/clock_and_bus.c:80,0x1860,linked symbol,Explicit GPIO configuration replaces mismatched C signature; original preceding calls leave r2=1. Verified reset/board-init ordered MMIO writes.
+0x50F0,FUN_000050f0,encoder_status_word,factory/src/encoder_io.c:35,0x2B5C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x51DC,read_encoder_candidate,factory_read_encoder,factory/src/encoder_io.c:40,0x2BF8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x52CC,copy_runtime_settings,copy_runtime_settings,factory/src/settings.c:4,0x4FA0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5368,load_or_initialize_settings,load_or_initialize_settings,factory/src/settings.c:84,0x52C0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x54CC,calibration_work_candidate,calibration_run,factory/src/calibration_work.c:23,0x12F0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x560C,FUN_0000560c,wait_for_startup_feedback,factory/src/boot_validation.c:5,0x1208,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x570C,FUN_0000570c,factory_apply_mode,factory/src/mode_and_position.c:9,0x38BC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x583C,FUN_0000583c,factory_apply_direction,factory/src/startup_helpers.c:20,0x55D8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5874,FUN_00005874,pause_control_chain,factory/src/remaining_helpers.c:97,0x4D30,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x588C,FUN_0000588c,timer2_pause_irq,factory/src/register_helpers.c:106,0x4ACC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x58A0,FUN_000058a0,factory_resume_control,factory/src/control_flow.c:37,0x1FD0,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5918,FUN_00005918,timer2_resume_irq,factory/src/register_helpers.c:110,0x4AE4,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x59C8,FUN_000059c8,measure_motor_geometry,factory/src/calibration_work.c:83,0x14F8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5A38,FUN_00005a38,encoder_trimmed_mean,factory/src/encoder_io.c:59,0x2CCC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5B84,FUN_00005b84,initialize_motion_tick,factory/src/boot_services.c:59,0x11C8,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5BD4,FUN_00005bd4,factory_apply_uart,factory/src/board_io.c:37,0x08FC,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5C50,FUN_00005c50,uart_disable,factory/src/startup_helpers.c:32,0x5614,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5CA0,FUN_00005ca0,factory_config_pins,factory/src/board_startup.c:8,0x0A3C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5CE8,FUN_00005ce8,uart_reset_rx,factory/src/uart.c:3,0x5D54,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x5D08,FUN_00005d08,format_telemetry_field,factory/src/telemetry.c:5,0x5A06,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x6D14,motion_timer_irq,motion_timer_irq,factory/src/motion_controller.c:55,0x3B5C,linked symbol,Historical migration mapping; behavior not certified per entry.
+0x70DC,uart_dispatch,uart_dispatch,factory/src/commands.c:99,0x1948,linked symbol,Historical migration mapping; behavior not certified per entry.

@@ -1,0 +1,28 @@
+44 C translation units compiled; no unresolved symbols.
+
+/tmp/tmpmwil79aw/audit.elf:	file format elf32-littlearm
+
+Sections:
+Idx Name            Size     VMA      Type
+  0                 00000000 00000000 
+  1 .vectors        000000c0 00000000 DATA
+  2 .text           00005ed0 000000c0 TEXT
+  3 .rodata         0000173c 00005f90 DATA
+  4 .ARM.exidx      00000010 000076cc 
+  5 .work_ram       00000a54 20000000 BSS
+  6 .data           00000000 20001600 DATA
+  7 .bss            00000000 20001600 BSS
+  8 .ARM.attributes 00000045 00000000 
+  9 .symtab         000039e0 00000000 
+ 10 .shstrtab       00000062 00000000 
+ 11 .strtab         00002417 00000000 
+
+Vector table: 48 words; reset=0x00004f39; stack=0x200015f8.
+Application ends at 0x76dc; remaining before identity page: 804 bytes.
+Application SHA-256 (including erased padding to 0x7A00): 9c0922b0aedabd35c9b22596dd5e2902c3c63e9b1f0c4293bda754a3a381b4c7
+PASS: 8 relocated flash primitive cases (success, busy timeout, rejected mode, out-of-range).
+PASS: 64 relocated settings commit/reload scenarios; actual flash wrappers and primitives executed; motor/IO transitions mocked.
+PASS: 8 full mutating UART commands persisted and reloaded; 8 bad-checksum packets caused no flash writes. Control/IO callbacks mocked.
+KNOWN LIMITATION REPRODUCED: busy flash write returns through legacy wrapper without programming; caller receives no status.
+PASS: complete relocated LUT writer: 64 erases, 16,384 table writes, one valid marker; lookup values scripted; lowest modeled SP 0x20001388.
+PASS: independent physical-address link with source assets, reserved pages and vector checks. No factory binary input; no output ELF retained. NOT hardware tested or approved for flashing.

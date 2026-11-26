@@ -1,0 +1,34 @@
+# Build output
+build/
+private_build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+*.elf
+*.map
+*.o
+*.obj
+*.a
+*.hex
+*.bin
+*.axf
+*.out
+*.uf2
+# Required recovered startup-data fixture for host tests
+!development/factory/tests/original_initialized_ram.bin
+
+# Keep board-specific captures and local exports outside the repository
+backups/
+private/
+private_capture*
+board_backup*
+
+# Python and editor-local state
+__pycache__/
+*.py[cod]
+.venv/
+.vs/
+.vscode/settings.local.json
+.DS_Store
+Thumbs.db

@@ -1,0 +1,6 @@
+Application SHA256: 9c0922b0aedabd35c9b22596dd5e2902c3c63e9b1f0c4293bda754a3a381b4c7
+PASS: 192 unsigned_divmod_pair comparisons; Thumb executed on both sides, including zero divisors where applicable.
+PASS: 192 signed_divmod_pair comparisons; Thumb executed on both sides, including zero divisors where applicable.
+PASS: 192 factory_multiply64 comparisons; Thumb executed on both sides, including zero divisors where applicable.
+PASS: 384 original 64-bit quotient/remainder executions against mathematical oracle.
+PASS: 256 telemetry comparisons; factory arithmetic instructions executed, OLED output mocked.

@@ -1,2 +1,3 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Preserve reproducible source and reference hashes on every platform.
+* text=auto eol=lf
+*.bin binary

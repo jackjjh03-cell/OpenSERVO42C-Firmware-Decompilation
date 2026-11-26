@@ -1,0 +1,7 @@
+build/
+private_build/
+__pycache__/
+*.hex
+*.bin
+*.elf
+*.o
