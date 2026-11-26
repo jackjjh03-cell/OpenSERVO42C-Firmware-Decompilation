@@ -8,7 +8,7 @@ The two goals of the project are to preserve the factory firmware and to provide
 
 Three versions are included: a VS Code development project, a bare C source tree and a fixed-address assembly reference. The C versions build without the original HEX. The assembly reference reproduces the recovered original application bytes exactly.
 
-> **Status:** The C implementation builds successfully and has undergone extensive host-side testing against the original instructions. No physical controller testing of the reconstructed firmware has been performed. The C executable is not byte-identical to the factory executable. This is an unofficial reconstruction, not the original Makerbase source release or a hardware-qualified firmware update.
+> **Status:** The C implementation builds successfully and has undergone extensive host-side testing against the original instructions. Limited controller testing of the reconstructed firmware has been performed, use at your own risk. The C executable is not byte-identical to the factory executable. This is an unofficial reconstruction, not the original Makerbase source release or a hardware-qualified firmware update.
 
 ## Contents
 
