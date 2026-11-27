@@ -78,7 +78,7 @@ SysInfo uses the original OLED driver and button handling. Pages are limited to 
 
 | Category | Information |
 |---|---|
-| Credits | Repository name and firmware revision |
+| Credits | OpenSERVO42C project name and firmware revision |
 | Hardware | MCU, processor architecture and live configured clock |
 | Settings | 21 fields: mode, baud, address, microsteps, current, direction, enable mode, protection, interpolation, display sleep, origin settings and other motor parameters |
 | PID | Raw proportional, integral and derivative gains |
@@ -267,3 +267,5 @@ Profile: e3b2b28ec72994b981f7c4dcc35b88382be7dca142b96c22e6f289661a40e302
 ## Source notice
 
 This is an unofficial firmware reconstruction and modification, not an original Makerbase source release. The custom application is independently compilable but is not byte-identical to the factory HEX. The separate assembly reference in the main repository is used for exact reproduction of the original instructions. See [NOTICE.md](SERVO42C_Custom_R02_Source/NOTICE.md). Project-authored code and documentation are available under the MIT license; see the root source notice for third-party material.
+
+The Credits screen was updated to the OpenSERVO42C name after the original R02 hardware test; existing verification records describe the earlier build.

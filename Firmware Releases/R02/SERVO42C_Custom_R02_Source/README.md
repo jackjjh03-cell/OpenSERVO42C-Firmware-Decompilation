@@ -36,7 +36,7 @@ Enter the normal menu, scroll past Exit to SysInfo, then use Next to move betwee
 
 | Category | Contents |
 |---|---|
-| Credits | Repository name and version |
+| Credits | OpenSERVO42C project name and version |
 | Hardware | Target MCU and architecture; clock in integer MHz from live firmware clock word |
 | Settings | 21 live fields including mode, baud, address, microsteps, current, direction, enable, protection, interpolation, origin, acceleration, torque and error limit |
 | PID | Raw Kp, Ki, Kd |
@@ -82,3 +82,5 @@ The exporter checks the backup revision, build hash, application range and exact
 ## Limitations
 
 Normal R02 startup and programming are confirmed on the original controller. Physical motor operation, real-time interrupt deadlines, broader identity compatibility and Windows IDE operation remain unverified. Both variants retain the original flash error-handling limitations. The profile variant is intended for controlled later testing, not the initial programming attempt. Vendor-derived source provenance and redistribution status are described in NOTICE.md.
+
+The OpenSERVO42C Credits text was updated after the recorded R02 hardware test. Historical verification results and application hashes refer to the earlier build.

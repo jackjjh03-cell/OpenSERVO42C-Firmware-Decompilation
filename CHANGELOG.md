@@ -2,6 +2,8 @@
 
 ## R02
 
+- Updated the project name to OpenSERVO42C-Firmware-Decompilation and refreshed the OLED Credits text. No motor-control logic changed.
+
 - Added SysInfo pages for hardware, settings, PID, motion, encoder, memory and fault diagnostics.
 - Added live encoder-derived RPM display, with the original pulse display available using Next.
 - Added settings access after a startup encoder fault, with the motor locked out.

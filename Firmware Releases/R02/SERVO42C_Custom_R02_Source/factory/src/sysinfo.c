@@ -100,8 +100,8 @@ static __attribute__((noinline)) void draw(void) {
     if(page==255){
         for(unsigned i=0;i<3;i++){unsigned c=category+i;if(c>EXIT_CATEGORY)break;rows[i][0]=i?' ':'*';text(rows[i]+1,names[c]);}
     }else if(category==0){
-        if(!page){text(rows[0],"SERVO42C-");text(rows[1],"Firmware-");text(rows[2],"Decompilat");}
-        else{text(rows[0],"ion");
+        if(!page){text(rows[0],"Open");text(rows[1],"SERVO42C");text(rows[2],"Firmware");}
+        else{text(rows[0],"Decomp.");
 #ifdef SYSINFO_PROFILE
             text(rows[1],"ProfileR02");
 #else

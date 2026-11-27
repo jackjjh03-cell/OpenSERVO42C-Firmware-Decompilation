@@ -1,6 +1,6 @@
-# SERVO42C-Firmware Decompilation
+# OpenSERVO42C — Firmware Decompilation
 
-[![Firmware build](https://github.com/jackjjh03-cell/SERVO42C-Firmware-Decompilation/actions/workflows/firmware-build.yml/badge.svg?branch=main)](https://github.com/jackjjh03-cell/SERVO42C-Firmware-Decompilation/actions/workflows/firmware-build.yml)
+[![Firmware build](https://github.com/jackjjh03-cell/OpenSERVO42C-Firmware-Decompilation/actions/workflows/firmware-build.yml/badge.svg?branch=main)](https://github.com/jackjjh03-cell/OpenSERVO42C-Firmware-Decompilation/actions/workflows/firmware-build.yml)
 
 Source reconstruction of the MKS SERVO42C V1.1.3 closed-loop stepper motor firmware for the HC32L130 microcontroller.
 
@@ -80,7 +80,7 @@ There are 44 C source files, seven headers and a linker script. Display graphics
 | [`assembly/`](assembly/) | Fixed-address Thumb assembly and recovered data literals | Checking the original application at instruction and byte level |
 
 ```text
-SERVO42C-Firmware-Decompilation/
+OpenSERVO42C-Firmware-Decompilation/
 ├── README.md
 ├── .gitignore
 ├── NOTICE.md
@@ -140,7 +140,7 @@ See [the firmware reference](development/docs/FIRMWARE.md) for the larger module
 
 ### Automated builds
 
-[GitHub Actions](https://github.com/jackjjh03-cell/SERVO42C-Firmware-Decompilation/actions) builds the factory C source, normal R02, the profiling variant and the assembly reference when firmware files change. It also checks that the standalone factory C files match the development tree. These checks run on Linux with LLVM 17; no controller or private flash backup is required. Successful runs also provide application ELF files, linker maps, build reports and SHA-256 checksums under Artifacts. These are not complete board-programming images. Passing a build check does not replace testing on the motor.
+[GitHub Actions](https://github.com/jackjjh03-cell/OpenSERVO42C-Firmware-Decompilation/actions) builds the factory C source, normal R02, the profiling variant and the assembly reference when firmware files change. It also checks that the standalone factory C files match the development tree. These checks run on Linux with LLVM 17; no controller or private flash backup is required. Successful runs also provide application ELF files, linker maps, build reports and SHA-256 checksums under Artifacts. These are not complete board-programming images. Passing a build check does not replace testing on the motor.
 
 ### Requirements
 
@@ -583,7 +583,7 @@ Before programming a controller, establish a working recovery method, verify the
 ## Current limitations
 
 - The reconstructed C does not produce a byte-identical copy of the original application. A separate assembly reference reproduces the original application prefix exactly.
-- Normal R02 startup is confirmed on the original controller. Physical testing of the unmodified factory C build, motor regulation, current sensing, calibration and loaded operation remains outstanding.
+- Normal R02 startup was confirmed on the original controller before the project-name change in the Credits screen; the updated build has not been independently hardware-tested. Physical testing of the unmodified factory C build, motor regulation, current sensing, calibration and loaded operation remains outstanding.
 - Real-time interrupt latency, nested interrupt stack use and electrical behavior have not been established by the host tests.
 - The original firmware's flash wrappers do not propagate all programming errors. That behavior is retained for compatibility; power-loss recovery is not guaranteed.
 - Some names, internal data types and raw parameter meanings are inferred from the executable rather than recovered from the original source.
