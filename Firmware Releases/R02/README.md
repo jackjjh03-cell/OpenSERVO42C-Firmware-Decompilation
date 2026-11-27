@@ -4,8 +4,6 @@ Custom firmware for the MKS SERVO42C closed-loop stepper controller based on the
 
 R02 adds a system information menu, live RPM display, a settings-only mode for startup encoder faults and additional UART diagnostics. It also includes a PC configuration utility and a separate build for measuring motor interrupt performance.
 
-**Hardware status:** Normal R02 has been flashed and is running on the original SERVO42C controller. Motor performance, RPM accuracy and the optional profiling build have not yet been independently verified.
-
 ## Hardware
 
 | | |

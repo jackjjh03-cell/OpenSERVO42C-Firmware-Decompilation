@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SERVO42C Custom R01 UART settings viewer and explicit tuning editor.
+"""SERVO42C Custom R02 UART settings viewer and explicit tuning editor.
 Requires Python 3.8+, pyserial, and Tkinter for the GUI. No motion commands.
 """
 import argparse
