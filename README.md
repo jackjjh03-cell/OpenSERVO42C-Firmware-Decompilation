@@ -8,7 +8,15 @@ The two goals of the project are to preserve the factory firmware and to provide
 
 Three versions are included: a VS Code development project, a bare C source tree and a fixed-address assembly reference. The C versions build without the original HEX. The assembly reference reproduces the recovered original application bytes exactly.
 
-> **Status:** The C implementation builds successfully and has undergone extensive host-side testing against the original instructions. Limited controller testing of the reconstructed firmware has been performed, use at your own risk. The C executable is not byte-identical to the factory executable. This is an unofficial reconstruction, not the original Makerbase source release or a hardware-qualified firmware update.
+> **Status:** Custom R02 has been flashed and is running on the original SERVO42C hardware. The reconstructed C also passes extensive host-side comparisons against the factory instructions. The factory C build is not byte-identical to the original HEX; the assembly reference is separate. Motor performance and compatibility with other boards still need verification.
+
+## Custom firmware R02
+
+The current custom firmware adds SysInfo, RPM telemetry, encoder-fault settings access and UART diagnostics.
+
+- [Custom R02 firmware](Compiled%20Firmware%20HEX/Custom%20firmware%20R2/README.md)
+- [SysInfo and UART diagnostic reference](Compiled%20Firmware%20HEX/Custom%20firmware%20R2/SERVO42C_Custom_R02_Source/docs/SYSINFO.md)
+- [PC configuration editor (Python)](Compiled%20Firmware%20HEX/Custom%20firmware%20R2/SERVO42C_Custom_R02_Source/tools/config_editor.py)
 
 ## Contents
 
@@ -557,14 +565,14 @@ Do not run the Python tools with assertions disabled. The original controller's 
 
 ## Firmware images and hardware testing
 
-Limited physical testing of the reconstructed firmware has been performed. No ready-to-flash firmware is provided. The offline exporter can assemble an application and a matching, same-board backup into a development HEX or BIN while preserving `0x7A00–0xFFFF`. It checks the firmware revision and build report, but cannot establish that an image is safe to program or run. It also preserves the backup's saved user settings; it does not automatically reset them to stock defaults.
+The normal Custom R02 build has been successfully programmed and booted on the original controller. Complete board-specific HEX images are not distributed here. The offline exporter can assemble an application and a matching, same-board backup into a development HEX or BIN while preserving `0x7A00–0xFFFF`. It checks the firmware revision and build report, but cannot establish that an image is safe to program or run. It also preserves the backup's saved user settings; it does not automatically reset them to stock defaults.
 
 Before programming a controller, establish a working recovery method, verify the programmer's erase behavior, retain the original backup and complete the checks in [Hardware validation](development/factory/BENCH_VALIDATION.md). Do not copy identity or calibration data between boards.
 
 ## Current limitations
 
 - The reconstructed C does not produce a byte-identical copy of the original application. A separate assembly reference reproduces the original application prefix exactly.
-- Physical startup, motor regulation, current sensing, calibration and loaded operation remain unverified.
+- Normal R02 startup is confirmed on the original controller. Physical testing of the unmodified factory C build, motor regulation, current sensing, calibration and loaded operation remains outstanding.
 - Real-time interrupt latency, nested interrupt stack use and electrical behavior have not been established by the host tests.
 - The original firmware's flash wrappers do not propagate all programming errors. That behavior is retained for compatibility; power-loss recovery is not guaranteed.
 - Some names, internal data types and raw parameter meanings are inferred from the executable rather than recovered from the original source.
@@ -593,5 +601,7 @@ Keep board backups, device-specific settings and calibration files out of the re
 ## Attribution and licensing
 
 MKS SERVO42C and the original firmware are associated with Makerbase. This project is an independent reconstruction and is not affiliated with or endorsed by the manufacturer. The reconstructed code, names and organization should not be mistaken for the manufacturer's original source release.
+
+Project-authored code and documentation are available under the [MIT license](LICENSE). See [NOTICE.md](NOTICE.md) for the status of recovered vendor material.
 
 Thank you Makerbase for keeping us waiting for 5 years!!!
