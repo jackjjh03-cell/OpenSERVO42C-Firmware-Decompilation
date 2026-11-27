@@ -1,6 +1,6 @@
 # SERVO42C Custom R02
 
-Custom firmware for the MKS SERVO42C V1.1.3 controller (HC32L130). Based on the independently compiled factory reconstruction. Adds a read-only SysInfo menu, diagnostic UART query and desktop tuning utility without removing stock motor control, calibration, protection, original menus or UART commands. This is an unofficial bench-test candidate, not a hardware-qualified release.
+Custom firmware for the MKS SERVO42C V1.1.3 controller (HC32L130). Based on the independently compiled factory reconstruction. Adds a read-only SysInfo menu, diagnostic UART query and desktop tuning utility without removing stock motor control, calibration, protection, original menus or UART commands. Normal R02 has been successfully programmed and booted on the original controller. It is not a hardware-qualified release.
 
 ## Build
 
@@ -81,4 +81,4 @@ The exporter checks the backup revision, build hash, application range and exact
 
 ## Limitations
 
-Hardware startup (including actual unique-device transform), physical motor operation, real-time interrupt deadlines, programming behavior and Windows IDE operation are unverified. Both variants retain the original flash error-handling limitations. The profile variant is intended for controlled later testing, not the initial programming attempt. Vendor-derived source provenance and redistribution status are described in NOTICE.md.
+Normal R02 startup and programming are confirmed on the original controller. Physical motor operation, real-time interrupt deadlines, broader identity compatibility and Windows IDE operation remain unverified. Both variants retain the original flash error-handling limitations. The profile variant is intended for controlled later testing, not the initial programming attempt. Vendor-derived source provenance and redistribution status are described in NOTICE.md.
