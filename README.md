@@ -574,6 +574,14 @@ Changes that intentionally alter factory behavior should be maintained separatel
 
 ## Custom firmware development
 
+### Custom Firmware R02
+
+Custom firmware based on the V1.1.3 reconstruction, featuring SysInfo diagnostics, live RPM monitoring, improved magnet error handling and extended UART functionality.
+
+- [Custom R02 Firmware Documentation](Compiled%20Firmware%20HEX/Custom%20firmware%20R2/SERVO42C_Custom_R02_Source/README.md)
+- [SysInfo Diagnostic and UART Reference](Compiled%20Firmware%20HEX/Custom%20firmware%20R2/SERVO42C_Custom_R02_Source/docs/SYSINFO.md)
+
+
 The factory C source is the reference implementation. Start custom changes from a separate branch and keep the source-only distribution synchronized with the development tree. Useful entry points are `defaults.h` for fallback settings, `commands.c` and `uart.c` for the serial interface, `menu.c` for the display menu and `motion_controller.c` for the motor-control logic. Changes to saved settings, timing or control parameters require additional validation; a successful build is not enough to establish safe motor operation.
 
 ## Contributing
