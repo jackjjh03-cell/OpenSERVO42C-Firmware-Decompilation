@@ -1,5 +1,7 @@
 # SERVO42C-Firmware Decompilation
 
+[![Firmware build](https://github.com/jackjjh03-cell/SERVO42C-Firmware-Decompilation/actions/workflows/firmware-build.yml/badge.svg?branch=main)](https://github.com/jackjjh03-cell/SERVO42C-Firmware-Decompilation/actions/workflows/firmware-build.yml)
+
 Source reconstruction of the MKS SERVO42C V1.1.3 closed-loop stepper motor firmware for the HC32L130 microcontroller.
 
 This project started with a complete 64 KiB flash read from a SERVO42C running V1.1.3, obtained using the MCU's UART bootloader. The executable was examined and disassembled, then reconstructed as an independently buildable C application. The original instructions are used as the reference for checking the implementation.
@@ -12,7 +14,7 @@ Three versions are included: a VS Code development project, a bare C source tree
 
 ## Custom firmware R02
 
-[Browse firmware releases](Firmware%20Releases/)
+[Browse firmware releases](Firmware%20Releases/) · [Changelog](CHANGELOG.md)
 
 The current custom firmware adds SysInfo, RPM telemetry, encoder-fault settings access and UART diagnostics.
 
@@ -138,7 +140,7 @@ See [the firmware reference](development/docs/FIRMWARE.md) for the larger module
 
 ### Automated builds
 
-[GitHub Actions](https://github.com/jackjjh03-cell/SERVO42C-Firmware-Decompilation/actions) builds the factory C source, normal R02, the profiling variant and the assembly reference when firmware files change. It also checks that the standalone factory C files match the development tree. These checks run on Linux with LLVM 17; no controller or private flash backup is required. Passing a build check does not replace testing on the motor.
+[GitHub Actions](https://github.com/jackjjh03-cell/SERVO42C-Firmware-Decompilation/actions) builds the factory C source, normal R02, the profiling variant and the assembly reference when firmware files change. It also checks that the standalone factory C files match the development tree. These checks run on Linux with LLVM 17; no controller or private flash backup is required. Successful runs also provide application ELF files, linker maps, build reports and SHA-256 checksums under Artifacts. These are not complete board-programming images. Passing a build check does not replace testing on the motor.
 
 ### Requirements
 

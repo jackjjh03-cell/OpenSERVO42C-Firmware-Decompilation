@@ -76,3 +76,24 @@ jobs:
       - name: Reassemble factory reference
         working-directory: assembly
         run: python3 build.py
+
+      - name: Package application builds
+        run: |
+          mkdir -p artifacts/factory artifacts/R02 artifacts/R02-profile
+          for file in servo42c.elf servo42c.map build_report.json; do
+            cp "development/build/factory/$file" "artifacts/factory/$file"
+            cp "Firmware Releases/R02/SERVO42C_Custom_R02_Source/build/custom/$file" "artifacts/R02/$file"
+            cp "Firmware Releases/R02/SERVO42C_Custom_R02_Source/build/profile/$file" "artifacts/R02-profile/$file"
+          done
+          printf '%s\n' 'Application builds only; not complete flash images.' 'Preserve each board’s original identity, settings and calibration. See Firmware Releases/R02/SERVO42C_Custom_R02_Source/FLASHING.md.' > artifacts/README.txt
+          cd artifacts
+          find factory R02 R02-profile -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
+
+      - name: Upload application builds
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: servo42c-applications
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
