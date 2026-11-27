@@ -22,9 +22,10 @@ permissions:
 
 jobs:
   build:
-    name: Build firmware (LLVM 17)
+    name: Build firmware (reference LLVM 17.0.0)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    container: swift:6.2.1-noble
+    timeout-minutes: 20
     steps:
       - name: Check out source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -33,14 +34,17 @@ jobs:
 
       - name: Install toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-17 lld-17 llvm-17 ninja-build
-          echo /usr/lib/llvm-17/bin >> "$GITHUB_PATH"
+          apt-get update
+          apt-get install -y --no-install-recommends cmake ninja-build python3
 
       - name: Check toolchain
         run: |
-          clang --version
-          ld.lld --version
+          clang --version | tee /tmp/clang-version.txt
+          ld.lld --version | tee /tmp/lld-version.txt
+          grep -F 'clang version 17.0.0' /tmp/clang-version.txt
+          grep -F 'LLD 17.0.0' /tmp/lld-version.txt
+          grep -F '10999b6d034fe318f3d56c83bddb6572593a8bb0' /tmp/clang-version.txt
+          grep -F '10999b6d034fe318f3d56c83bddb6572593a8bb0' /tmp/lld-version.txt
           llvm-objcopy --version
           cmake --version
           ninja --version
