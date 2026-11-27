@@ -62,14 +62,14 @@ jobs:
           cmp source/layout.ld development/factory/layout.ld
 
       - name: Build Custom R02
-        working-directory: 'Compiled Firmware HEX/Custom firmware R2/SERVO42C_Custom_R02_Source'
         run: |
+          cd 'Compiled Firmware HEX/Custom firmware R2/SERVO42C_Custom_R02_Source'
           cmake -S . -B build/custom -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arm-clang.cmake
           cmake --build build/custom
 
       - name: Build Custom R02 profiling
-        working-directory: 'Compiled Firmware HEX/Custom firmware R2/SERVO42C_Custom_R02_Source'
         run: |
+          cd 'Compiled Firmware HEX/Custom firmware R2/SERVO42C_Custom_R02_Source'
           cmake -S . -B build/profile -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arm-clang.cmake -DSYSINFO_PROFILE=ON
           cmake --build build/profile
 
