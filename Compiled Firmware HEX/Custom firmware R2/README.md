@@ -260,17 +260,6 @@ Normal:  1453a05c4500553a6093f4244421916ba6a6a0779ee371266c861809de4cf313
 Profile: e3b2b28ec72994b981f7c4dcc35b88382be7dca142b96c22e6f289661a40e302
 ```
 
-### Hardware testing status
-
-- [x] Normal R02 programmed and reported running on the original controller
-- [ ] Original menus, telemetry and SysInfo individually checked
-- [ ] Encoder fault timeout and actual motor-output lockout checked
-- [ ] UART diagnostics and PC configuration utility tested on the board
-- [ ] Settings persistence checked after power cycling
-- [ ] Unloaded motor movement, RPM accuracy and closed-loop behavior checked
-- [ ] Calibration, protection and real-time performance checked
-- [ ] Profiling build tested on hardware
-
 ## Revision history
 
 - **R02 (first published custom revision):** Added SysInfo, diagnostic UART command, PC tuning utility, optional interrupt profiling, startup encoder-fault settings-only mode, encoder-derived RPM display and pulse-count toggle. Removed the startup banner and optimized display and menu data to recover flash space. Retained the original device-ID check and board-specific flash regions. First reported successful physical boot of the normal custom build.
