@@ -557,7 +557,7 @@ Do not run the Python tools with assertions disabled. The original controller's 
 
 ## Firmware images and hardware testing
 
-No physical testing of the reconstructed firmware has been performed. No ready-to-flash firmware is provided. The offline exporter can assemble an application and a matching, same-board backup into a development HEX or BIN while preserving `0x7A00–0xFFFF`. It checks the firmware revision and build report, but cannot establish that an image is safe to program or run. It also preserves the backup's saved user settings; it does not automatically reset them to stock defaults.
+Limited physical testing of the reconstructed firmware has been performed. No ready-to-flash firmware is provided. The offline exporter can assemble an application and a matching, same-board backup into a development HEX or BIN while preserving `0x7A00–0xFFFF`. It checks the firmware revision and build report, but cannot establish that an image is safe to program or run. It also preserves the backup's saved user settings; it does not automatically reset them to stock defaults.
 
 Before programming a controller, establish a working recovery method, verify the programmer's erase behavior, retain the original backup and complete the checks in [Hardware validation](development/factory/BENCH_VALIDATION.md). Do not copy identity or calibration data between boards.
 
