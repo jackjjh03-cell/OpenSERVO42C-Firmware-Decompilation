@@ -43,4 +43,4 @@ python tools/export_board_image.py build/factory/servo42c.elf /path/to/bin.hex o
 
 The output directory must not exist. The backup must match the supported revision and originate from the same board. The exporter checks the build hash and preserves every byte at `0x7A00–0xFFFF`, including any saved user configuration. It does not flash hardware. Establish safe recovery and validate the hardware before programming; see `factory/BENCH_VALIDATION.md`.
 
-The C output differs from the original executable. A separate assembly reference was verified byte-exact against the private dump; it is not an original C source release. Exact interrupt timing, electrical motor behavior, flash power-loss recovery and Windows IDE operation remain unverified.
+The C output differs from the original executable. A separate assembly reference was verified byte-exact against the private dump; it is not an original C source release. Exact interrupt timing, electrical motor behavior and flash power-loss recovery remain unverified.

@@ -13,7 +13,7 @@ cmake -S . -B build/factory -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arm-clang.cmak
 cmake --build build/factory
 ```
 
-Leave `CMAKE_BUILD_TYPE` unset to use the configured size-optimized flags. The build creates `servo42c.elf`, `servo42c.map`, `compile_commands.json` and `build_report.json` in `build/factory/`. No board connection or binary backup is needed to compile. Linux builds are verified; Windows toolchain and IDE operation have not been tested.
+Leave `CMAKE_BUILD_TYPE` unset to use the configured size-optimized flags. The build creates `servo42c.elf`, `servo42c.map`, `compile_commands.json` and `build_report.json` in `build/factory/`. No board connection or binary backup is needed to compile.
 
 ## Source tree
 

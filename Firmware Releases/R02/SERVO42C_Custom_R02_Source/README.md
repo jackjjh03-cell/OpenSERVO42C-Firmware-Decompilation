@@ -20,7 +20,7 @@ cmake --build build/profile
 cmake --build build/profile --target verify
 ```
 
-Do not set CMAKE_BUILD_TYPE. The size-optimized build uses -Oz, -fomit-frame-pointer and LLD safe identical-code folding. The linker protects all reserved storage from application overlap. No vendor image is needed to compile; a same-board full backup is needed to export a full programming image. Linux build verified; Windows toolchain/GUI untested.
+Do not set CMAKE_BUILD_TYPE. The size-optimized build uses -Oz, -fomit-frame-pointer and LLD safe identical-code folding. The linker protects all reserved storage from application overlap. No vendor image is needed to compile; a same-board full backup is needed to export a full programming image.
 
 ## R02: startup encoder lockout and RPM
 
@@ -81,6 +81,6 @@ The exporter checks the backup revision, build hash, application range and exact
 
 ## Limitations
 
-Normal R02 startup and programming are confirmed on the original controller. Physical motor operation, real-time interrupt deadlines, broader identity compatibility and Windows IDE operation remain unverified. Both variants retain the original flash error-handling limitations. The profile variant is intended for controlled later testing, not the initial programming attempt. Vendor-derived source provenance and redistribution status are described in NOTICE.md.
+Normal R02 startup and programming are confirmed on the original controller. Physical motor operation, real-time interrupt deadlines and broader identity compatibility remain unverified. Both variants retain the original flash error-handling limitations. The profile variant is intended for controlled later testing, not the initial programming attempt. Vendor-derived source provenance and redistribution status are described in NOTICE.md.
 
 The OpenSERVO42C Credits text was updated after the recorded R02 hardware test. Historical verification results and application hashes refer to the earlier build.

@@ -151,7 +151,7 @@ See [the firmware reference](development/docs/FIRMWARE.md) for the larger module
 - Python 3.
 - Visual Studio Code (optional, with the C/C++ extension for editing).
 
-Make sure the command-line tools are available on `PATH`. The reference build was verified on Linux using Clang/LLD 17. Windows IDE and toolchain operation have not yet been tested.
+Make sure the command-line tools are available on `PATH`. The reference build was verified on Linux using Clang/LLD 17.
 
 ### Visual Studio Code
 
@@ -587,7 +587,7 @@ Before programming a controller, establish a working recovery method, verify the
 - Real-time interrupt latency, nested interrupt stack use and electrical behavior have not been established by the host tests.
 - The original firmware's flash wrappers do not propagate all programming errors. That behavior is retained for compatibility; power-loss recovery is not guaranteed.
 - Some names, internal data types and raw parameter meanings are inferred from the executable rather than recovered from the original source.
-- Other board revisions, firmware versions and Windows development environments have not been validated.
+- Other board revisions and firmware versions have not been validated.
 
 Changes that intentionally alter factory behavior should be maintained separately from the reference implementation, so the original behavior remains available for comparison.
 
