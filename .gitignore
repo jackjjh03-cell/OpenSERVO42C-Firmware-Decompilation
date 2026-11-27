@@ -17,11 +17,13 @@ compile_commands.json
 *.uf2
 # Required recovered startup-data fixture for host tests
 !development/factory/tests/original_initialized_ram.bin
+!**/factory/tests/original_initialized_ram.bin
 
 # Keep board-specific captures and local exports outside the repository
 backups/
 private/
 private_capture*
+SERVO42C_Custom_R02_Private/
 board_backup*
 
 # Python and editor-local state
