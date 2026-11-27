@@ -1,0 +1,271 @@
+address,readable_name,ghidra_name,module,warning_count,unresolved_registers,previous_direct_callees
+0x00C0,runtime_entry,runtime_entry,runtime,0,,0x0314 0x2CC0
+0x00C8,runtime_main_jump,main,runtime,0,,0x2CC0
+0x00D4,reset_handler,reset_handler,runtime,0,,0x00C0 0x1A8C
+0x00EE,nmi_default,nmi_default,runtime,1,,
+0x00F2,FUN_000000f2,FUN_000000f2,runtime,1,,
+0x00F4,FUN_000000f4,FUN_000000f4,runtime,1,,
+0x0110,udivmod32,udivmod32,runtime,0,,
+0x013C,sdivmod32,sdivmod32,runtime,0,,0x0110
+0x0164,signed_divmod64_wrapper,signed_divmod64_wrapper,runtime,0,,0x0292
+0x01B0,FUN_000001b0,FUN_000001b0,runtime,0,,0x02F2
+0x022A,FUN_0000022a,FUN_0000022a,runtime,0,,
+0x024E,FUN_0000024e,FUN_0000024e,runtime,0,,
+0x025C,FUN_0000025c,FUN_0000025c,runtime,0,,
+0x0260,FUN_00000260,FUN_00000260,runtime,0,,
+0x0272,FUN_00000272,FUN_00000272,runtime,0,,
+0x0280,FUN_00000280,FUN_00000280,runtime,0,,
+0x0292,FUN_00000292,FUN_00000292,runtime,0,,0x02F2 0x0338
+0x02F2,FUN_000002f2,FUN_000002f2,runtime,0,,
+0x0314,scatter_load_init,scatter_load_init,runtime,1,,0x00C8
+0x0338,logical_shift_right64,logical_shift_right64,runtime,0,,
+0x035A,scatter_decompress,scatter_decompress,runtime,0,,
+0x03BC,FUN_000003bc,FUN_000003bc,unresolved_helpers,0,,0x074C 0x2410 0x373A
+0x045C,FUN_0000045c,FUN_0000045c,peripheral_helpers,0,,
+0x0464,FUN_00000464,FUN_00000464,peripheral_helpers,0,,0x3890
+0x0494,FUN_00000494,FUN_00000494,peripheral_helpers,0,,
+0x049C,FUN_0000049c,FUN_0000049c,peripheral_helpers,0,,
+0x04A4,FUN_000004a4,FUN_000004a4,peripheral_helpers,0,,
+0x04AC,FUN_000004ac,FUN_000004ac,peripheral_helpers,0,,
+0x04B4,FUN_000004b4,FUN_000004b4,peripheral_helpers,0,,
+0x04BC,FUN_000004bc,FUN_000004bc,peripheral_helpers,0,,0x373A
+0x0548,FUN_00000548,FUN_00000548,peripheral_helpers,0,,
+0x0550,FUN_00000550,FUN_00000550,peripheral_helpers,0,,
+0x0558,FUN_00000558,FUN_00000558,peripheral_helpers,0,,0x373A
+0x05A0,FUN_000005a0,FUN_000005a0,peripheral_helpers,0,,0x373A
+0x05E8,FUN_000005e8,FUN_000005e8,peripheral_helpers,0,,
+0x05F0,FUN_000005f0,FUN_000005f0,peripheral_helpers,0,,
+0x05F2,FUN_000005f2,FUN_000005f2,peripheral_helpers,0,,
+0x05FA,FUN_000005fa,FUN_000005fa,peripheral_helpers,0,,
+0x0602,FUN_00000602,FUN_00000602,peripheral_helpers,0,,
+0x060A,FUN_0000060a,FUN_0000060a,peripheral_helpers,0,,
+0x0612,FUN_00000612,FUN_00000612,peripheral_helpers,0,,
+0x061A,FUN_0000061a,FUN_0000061a,peripheral_helpers,0,,
+0x0622,FUN_00000622,FUN_00000622,peripheral_helpers,0,,
+0x062A,FUN_0000062a,FUN_0000062a,peripheral_helpers,0,,
+0x0632,FUN_00000632,FUN_00000632,peripheral_helpers,0,,
+0x063A,FUN_0000063a,FUN_0000063a,peripheral_helpers,0,,
+0x063C,FUN_0000063c,FUN_0000063c,peripheral_helpers,0,,
+0x0644,FUN_00000644,FUN_00000644,peripheral_helpers,0,,
+0x064C,identity_transform_candidate,FUN_0000064c,application,0,,
+0x06BC,FUN_000006bc,FUN_000006bc,peripheral_helpers,0,,
+0x0718,adc_clear_flags,adc_clear_flags,motor_adc_motion,0,,
+0x0728,FUN_00000728,FUN_00000728,peripheral_helpers,0,,
+0x0738,adc_test_flags,adc_test_flags,motor_adc_motion,0,,
+0x074C,adc_read_result,adc_read_result,motor_adc_motion,0,,
+0x0758,FUN_00000758,FUN_00000758,peripheral_helpers,0,,0x2D98
+0x07B0,adc_start,adc_start,motor_adc_motion,0,,
+0x07BC,adc_stop,adc_stop,motor_adc_motion,0,,
+0x07C8,FUN_000007c8,FUN_000007c8,peripheral_helpers,0,,
+0x07E4,FUN_000007e4,FUN_000007e4,peripheral_helpers,0,,
+0x0824,FUN_00000824,FUN_00000824,peripheral_helpers,0,,
+0x086C,FUN_0000086c,FUN_0000086c,peripheral_helpers,0,,
+0x087A,FUN_0000087a,FUN_0000087a,peripheral_helpers,0,,
+0x0880,FUN_00000880,FUN_00000880,peripheral_helpers,0,,
+0x088C,FUN_0000088c,FUN_0000088c,peripheral_helpers,0,,
+0x0898,FUN_00000898,FUN_00000898,peripheral_helpers,0,,0x2D98
+0x08B0,FUN_000008b0,FUN_000008b0,peripheral_helpers,0,,
+0x08C0,FUN_000008c0,FUN_000008c0,peripheral_helpers,0,,
+0x08D8,FUN_000008d8,FUN_000008d8,peripheral_helpers,0,,
+0x08EC,FUN_000008ec,FUN_000008ec,peripheral_helpers,0,,
+0x0908,FUN_00000908,FUN_00000908,peripheral_helpers,0,,
+0x0924,FUN_00000924,FUN_00000924,peripheral_helpers,0,,
+0x093C,FUN_0000093c,FUN_0000093c,peripheral_helpers,0,,
+0x0954,FUN_00000954,FUN_00000954,peripheral_helpers,0,,
+0x0980,FUN_00000980,FUN_00000980,peripheral_helpers,0,,
+0x09B4,FUN_000009b4,FUN_000009b4,peripheral_helpers,0,,
+0x09D0,FUN_000009d0,FUN_000009d0,peripheral_helpers,0,,
+0x0A00,FUN_00000a00,FUN_00000a00,peripheral_helpers,0,,
+0x0A54,FUN_00000a54,FUN_00000a54,peripheral_helpers,0,,
+0x0AF8,FUN_00000af8,FUN_00000af8,peripheral_helpers,0,,
+0x0B14,FUN_00000b14,FUN_00000b14,peripheral_helpers,0,,
+0x0B84,FUN_00000b84,FUN_00000b84,peripheral_helpers,0,,
+0x0BA0,FUN_00000ba0,FUN_00000ba0,peripheral_helpers,0,,
+0x0C28,FUN_00000c28,FUN_00000c28,peripheral_helpers,0,,
+0x0CC4,FUN_00000cc4,FUN_00000cc4,peripheral_helpers,0,,
+0x0CCC,FUN_00000ccc,FUN_00000ccc,peripheral_helpers,0,,0x025C 0x113C 0x1164 0x26E8
+0x0D3C,FUN_00000d3c,FUN_00000d3c,peripheral_helpers,1,,
+0x0D6C,FUN_00000d6c,FUN_00000d6c,peripheral_helpers,0,,
+0x0D84,FUN_00000d84,FUN_00000d84,peripheral_helpers,0,,
+0x0D94,FUN_00000d94,FUN_00000d94,peripheral_helpers,0,,
+0x0DAC,FUN_00000dac,FUN_00000dac,peripheral_helpers,0,,
+0x0E20,startup_diagnostics,FUN_00000e20,application,1,,0x135C 0x1B28 0x1DF0 0x267C 0x2DE8 0x2FE0 0x342C 0x3CC8 0x4568 0x4574 0x4884 0x4DC8 0x5B84 0x5BD4
+0x0FEC,FUN_00000fec,FUN_00000fec,unresolved_helpers,0,,
+0x106C,FUN_0000106c,FUN_0000106c,unresolved_helpers,0,,
+0x1078,FUN_00001078,FUN_00001078,unresolved_helpers,0,,0x025C
+0x1120,FUN_00001120,FUN_00001120,unresolved_helpers,0,,
+0x113C,FUN_0000113c,FUN_0000113c,unresolved_helpers,0,,0x1188 0x1260
+0x1164,FUN_00001164,FUN_00001164,unresolved_helpers,0,,0x1260
+0x1188,FUN_00001188,FUN_00001188,unresolved_helpers,0,extraout_r3,0x1120 0x1214
+0x1214,FUN_00001214,FUN_00001214,unresolved_helpers,0,,
+0x1234,FUN_00001234,FUN_00001234,unresolved_helpers,0,,
+0x1260,FUN_00001260,FUN_00001260,unresolved_helpers,0,extraout_r2,0x1120 0x1214
+0x12F0,FUN_000012f0,FUN_000012f0,unresolved_helpers,0,,
+0x12F4,FUN_000012f4,FUN_000012f4,unresolved_helpers,0,,
+0x12F8,FUN_000012f8,FUN_000012f8,unresolved_helpers,0,,
+0x1304,FUN_00001304,FUN_00001304,unresolved_helpers,0,,0x16AC
+0x1318,FUN_00001318,FUN_00001318,unresolved_helpers,0,,0x16AC
+0x132C,FUN_0000132c,FUN_0000132c,unresolved_helpers,0,,0x16AC
+0x1344,FUN_00001344,FUN_00001344,unresolved_helpers,0,,0x16AC
+0x135C,FUN_0000135c,FUN_0000135c,unresolved_helpers,0,,0x12F8
+0x136C,FUN_0000136c,FUN_0000136c,unresolved_helpers,0,,0x12F8
+0x137C,FUN_0000137c,FUN_0000137c,unresolved_helpers,0,,0x16AC
+0x1408,FUN_00001408,FUN_00001408,unresolved_helpers,0,,
+0x141C,FUN_0000141c,FUN_0000141c,unresolved_helpers,0,,0x16AC
+0x1430,FUN_00001430,FUN_00001430,unresolved_helpers,0,,0x16AC
+0x1444,hardfault_handler,hardfault_handler,unresolved_helpers,2,,
+0x1454,FUN_00001454,FUN_00001454,unresolved_helpers,0,,
+0x1464,FUN_00001464,FUN_00001464,unresolved_helpers,0,,
+0x1474,FUN_00001474,FUN_00001474,unresolved_helpers,0,extraout_r2 extraout_r3,0x1454 0x1464
+0x14B0,FUN_000014b0,FUN_000014b0,unresolved_helpers,0,,
+0x14B8,FUN_000014b8,FUN_000014b8,unresolved_helpers,0,,
+0x1570,FUN_00001570,FUN_00001570,unresolved_helpers,0,,
+0x1578,FUN_00001578,FUN_00001578,unresolved_helpers,0,,0x0110 0x1608 0x160E
+0x15EC,__ARM_common_switch8,__ARM_common_switch8,runtime,3,in_r3 unaff_lr,
+0x1608,FUN_00001608,FUN_00001608,unresolved_helpers,0,,
+0x160E,FUN_0000160e,FUN_0000160e,unresolved_helpers,0,,0x16AC
+0x161C,FUN_0000161c,FUN_0000161c,unresolved_helpers,0,,0x2334 0x2EC4
+0x165C,FUN_0000165c,FUN_0000165c,unresolved_helpers,0,,0x1304 0x136C 0x2090
+0x169A,scatter_zero_words,scatter_zero_words,runtime,0,,
+0x16AC,FUN_000016ac,FUN_000016ac,unresolved_helpers,0,,
+0x16C4,FUN_000016c4,FUN_000016c4,unresolved_helpers,0,,
+0x16E4,systick_handler,systick_handler,unresolved_helpers,0,,
+0x16EC,FUN_000016ec,FUN_000016ec,unresolved_helpers,5,,0x15EC 0x231C 0x2D98
+0x17E8,FUN_000017e8,FUN_000017e8,unresolved_helpers,5,,0x022A 0x15EC
+0x1924,FUN_00001924,FUN_00001924,unresolved_helpers,0,,0x17E8
+0x193C,FUN_0000193c,FUN_0000193c,unresolved_helpers,0,,
+0x1A20,FUN_00001a20,FUN_00001a20,unresolved_helpers,0,,
+0x1A40,FUN_00001a40,FUN_00001a40,unresolved_helpers,0,,0x16AC
+0x1A54,FUN_00001a54,FUN_00001a54,unresolved_helpers,0,extraout_r2,0x1A7C 0x231C
+0x1A7C,FUN_00001a7c,FUN_00001a7c,unresolved_helpers,0,,0x17E8
+0x1A8C,system_init,system_init,application,0,in_r3,0x1234 0x16EC 0x193C 0x1A20 0x1A54 0x2280
+0x1B28,foreground_ui_protection,foreground_ui_protection,application,1,,0x0908 0x0924 0x093C 0x135C 0x2090 0x20E4 0x27E8 0x2DE8 0x2FE0 0x311C 0x3220 0x3E54 0x3F28 0x4574 0x4884 0x4D84
+0x1CE0,FUN_00001ce0,FUN_00001ce0,unresolved_helpers,0,,0x0110 0x1474 0x373A
+0x1DF0,FUN_00001df0,FUN_00001df0,unresolved_helpers,0,,0x0110 0x0908 0x0924 0x20E4 0x2464 0x267C 0x3052 0x3A8C 0x470C 0x5030 0x52CC 0x5368 0x560C 0x59C8
+0x1F78,FUN_00001f78,FUN_00001f78,unresolved_helpers,0,,0x2334 0x44A8
+0x1FB8,FUN_00001fb8,FUN_00001fb8,unresolved_helpers,0,,
+0x1FCC,FUN_00001fcc,FUN_00001fcc,unresolved_helpers,0,,
+0x1FE4,FUN_00001fe4,FUN_00001fe4,unresolved_helpers,0,,
+0x1FFC,FUN_00001ffc,FUN_00001ffc,unresolved_helpers,0,,
+0x2010,FUN_00002010,FUN_00002010,unresolved_helpers,0,,
+0x2090,FUN_00002090,FUN_00002090,unresolved_helpers,0,,0x0880 0x088C 0x20E4 0x342C 0x3488 0x34A4 0x3B70 0x3B9C 0x3E80 0x3F28 0x588C 0x5918
+0x20E4,FUN_000020e4,FUN_000020e4,unresolved_helpers,0,in_r3,0x013C 0x01B0 0x26CC 0x3744 0x3CAC 0x5A38
+0x21E0,FUN_000021e0,FUN_000021e0,unresolved_helpers,0,,0x16AC
+0x21F0,FUN_000021f0,FUN_000021f0,unresolved_helpers,0,,0x0110 0x21E0
+0x2280,FUN_00002280,FUN_00002280,unresolved_helpers,0,,
+0x231C,FUN_0000231c,FUN_0000231c,unresolved_helpers,0,,
+0x2334,uart_start_reply,uart_start_reply,uart,1,,
+0x239C,FUN_0000239c,FUN_0000239c,unresolved_helpers,0,in_r3,0x07E4 0x2448 0x25F4 0x2D84 0x3B70
+0x2410,FUN_00002410,FUN_00002410,unresolved_helpers,0,,0x0FEC
+0x2448,FUN_00002448,FUN_00002448,unresolved_helpers,0,,0x0FEC
+0x2464,check_current_offsets,check_current_offsets,motor_adc_motion,1,unaff_r6 unaff_r7,0x0718 0x0738 0x074C 0x07B0 0x07BC 0x07C8 0x08B0 0x08C0 0x0B14 0x2DE8 0x4884
+0x256C,FUN_0000256c,FUN_0000256c,unresolved_helpers,0,,0x06BC 0x0718 0x0728 0x0758 0x07E4 0x0898 0x141C 0x2D84 0x2DE8
+0x25F4,FUN_000025f4,FUN_000025f4,unresolved_helpers,0,,
+0x2608,board_init,board_init,application,0,,0x1078 0x256C 0x2634 0x286C 0x35A8 0x3F84 0x4C8C 0x505C
+0x2634,FUN_00002634,FUN_00002634,unresolved_helpers,1,in_r3,0x135C 0x137C 0x3F28
+0x267C,load_calibration_knots,load_calibration_knots,encoder_calibration,0,,
+0x26CC,encoder_lut_read,encoder_lut_read,encoder_calibration,0,,
+0x26E8,encoder_inverse_lookup,encoder_inverse_lookup,encoder_calibration,2,,0x0110 0x373A 0x3ECC 0x4884
+0x279C,FUN_0000279c,FUN_0000279c,unresolved_helpers,0,,0x0CCC 0x46E0
+0x27E8,update_multiturn_angle,update_multiturn_angle,encoder_calibration,0,,0x26CC 0x51DC
+0x286C,FUN_0000286c,FUN_0000286c,unresolved_helpers,0,,0x1A40
+0x28C8,FUN_000028c8,FUN_000028c8,unresolved_helpers,0,,0x08C0 0x08D8 0x2334
+0x2A38,uart0_irq,uart0_irq,uart,6,,0x0D3C 0x15EC 0x5CE8 0x70DC
+0x2C2C,device_identity_check,device_identity_check,application,0,,0x064C 0x1188 0x1260 0x12F4 0x2DE8
+0x2CC0,application_main,main,application,0,,0x0E20 0x161C 0x1A8C 0x1B28 0x1F78 0x2090 0x2608 0x27E8 0x2C2C 0x3F48 0x5CA0
+0x2D34,menu_mode,menu_mode,interface,0,,0x2090 0x470C 0x52CC
+0x2D84,zero_bytes,zero_bytes,unresolved_helpers,0,,
+0x2D98,delay_100us_candidate,delay_100us_candidate,unresolved_helpers,0,,0x0110
+0x2DE8,delay_ms_candidate,delay_ms_candidate,unresolved_helpers,0,,0x0110
+0x2E38,calibration_request,calibration_request,encoder_calibration,0,in_r3,0x2DE8 0x3A18 0x4884 0x54CC 0x5874
+0x2EC4,menu_goto_0,menu_goto_0,interface,1,in_r3,0x2090 0x20E4 0x2DE8 0x3E80 0x4884 0x4DC8
+0x2FE0,display_banner,display_banner,interface,0,,0x2DE8 0x4884 0x492C
+0x3040,FUN_00003040,FUN_00003040,unresolved_helpers,0,,0x08C0 0x0B84
+0x3052,FUN_00003052,FUN_00003052,unresolved_helpers,0,extraout_r1 extraout_r1_00 extraout_r1_01 extraout_r1_02 extraout_r1_03 extraout_r1_04,0x0110
+0x311C,FUN_0000311c,FUN_0000311c,unresolved_helpers,0,,0x135C 0x4584
+0x3220,FUN_00003220,FUN_00003220,unresolved_helpers,0,extraout_r2,0x0164 0x01B0 0x025C 0x0280 0x4884 0x5D08
+0x342C,FUN_0000342c,FUN_0000342c,unresolved_helpers,0,,
+0x3470,FUN_00003470,FUN_00003470,unresolved_helpers,0,,
+0x3488,FUN_00003488,FUN_00003488,unresolved_helpers,0,,
+0x34A4,FUN_000034a4,FUN_000034a4,unresolved_helpers,0,,
+0x34C0,FUN_000034c0,FUN_000034c0,unresolved_helpers,0,,0x2DE8 0x3470
+0x3534,FUN_00003534,FUN_00003534,unresolved_helpers,0,,0x2DE8 0x3470
+0x35A8,FUN_000035a8,FUN_000035a8,unresolved_helpers,0,,0x0954 0x0980 0x09B4 0x09D0 0x0A00 0x0A54 0x0AF8 0x0C28 0x1318 0x137C 0x1408 0x2D84
+0x373A,abs32_candidate,abs32_candidate,unresolved_helpers,0,,
+0x3744,FUN_00003744,FUN_00003744,unresolved_helpers,0,,0x0110 0x01B0
+0x3818,FUN_00003818,FUN_00003818,unresolved_helpers,0,,0x373A
+0x3890,FUN_00003890,FUN_00003890,unresolved_helpers,0,,0x04BC 0x0558 0x05A0 0x1CE0 0x342C 0x3818 0x3BB0 0x3C38
+0x3938,menu_restore,menu_restore,interface,0,,0x1188 0x2DE8 0x470C 0x4884 0x5368 0x5874
+0x3978,read_active_settings_record,FUN_00003978,configuration_flash,0,,
+0x3A18,FUN_00003a18,FUN_00003a18,unresolved_helpers,0,,0x093C
+0x3A8C,FUN_00003a8c,FUN_00003a8c,unresolved_helpers,0,,0x07E4 0x0D6C 0x0D84 0x0D94 0x0DAC 0x0FEC 0x2410 0x2D84 0x3B9C 0x3CAC
+0x3B70,FUN_00003b70,FUN_00003b70,unresolved_helpers,0,,
+0x3B9C,FUN_00003b9c,FUN_00003b9c,unresolved_helpers,0,,
+0x3BB0,FUN_00003bb0,FUN_00003bb0,unresolved_helpers,0,,0x26CC 0x373A 0x51DC
+0x3C38,FUN_00003c38,FUN_00003c38,unresolved_helpers,0,,
+0x3CAC,FUN_00003cac,FUN_00003cac,unresolved_helpers,0,,0x342C
+0x3CC8,FUN_00003cc8,FUN_00003cc8,unresolved_helpers,0,,0x0824 0x086C 0x087A 0x0FEC 0x1304 0x1344 0x137C 0x1408 0x2090 0x2D84
+0x3DD4,FUN_00003dd4,FUN_00003dd4,unresolved_helpers,0,,0x088C 0x1304 0x132C
+0x3E54,FUN_00003e54,FUN_00003e54,unresolved_helpers,0,,0x0880 0x1304 0x1344
+0x3E80,FUN_00003e80,FUN_00003e80,unresolved_helpers,0,,0x135C
+0x3ECC,FUN_00003ecc,FUN_00003ecc,unresolved_helpers,1,,0x013C 0x4884
+0x3F28,FUN_00003f28,FUN_00003f28,unresolved_helpers,0,,
+0x3F48,FUN_00003f48,FUN_00003f48,application,0,,0x2DE8
+0x3F84,FUN_00003f84,FUN_00003f84,unresolved_helpers,0,,0x1318 0x137C
+0x3FCC,menu_acc,menu_acc,interface,5,,0x15EC 0x470C 0x52CC
+0x404C,menu_autosdd,menu_autosdd,interface,0,,0x470C 0x52CC
+0x4084,menu_uartbaud,menu_uartbaud,interface,5,,0x15EC 0x470C 0x52CC
+0x41C8,menu_ma,menu_ma,interface,0,,0x0110 0x470C 0x52CC
+0x420C,menu_dir,menu_dir,interface,0,,0x470C 0x52CC
+0x4244,menu_en,menu_en,interface,0,,0x470C 0x52CC
+0x4274,menu_exit,menu_exit,interface,0,,
+0x4288,menu_mplyer,menu_mplyer,interface,0,,0x470C 0x52CC
+0x42C0,menu_mstep,menu_mstep,interface,0,,0x470C 0x52CC
+0x4360,menu_mottype,menu_mottype,interface,0,,0x470C 0x52CC
+0x439C,menu_uartaddr,menu_uartaddr,interface,0,,0x470C 0x52CC
+0x43D0,menu_0_dir,menu_0_dir,interface,0,,0x470C 0x52CC
+0x4400,menu_0_speed,menu_0_speed,interface,0,,0x470C 0x52CC
+0x442C,menu_0_mode,menu_0_mode,interface,0,,0x470C 0x52CC
+0x4464,menu_protect,menu_protect,interface,0,,0x470C 0x52CC
+0x44A8,menu_set_0,menu_set_0,interface,0,,0x26CC 0x2DE8 0x470C 0x4884 0x52CC 0x5874 0x5A38
+0x4568,FUN_00004568,FUN_00004568,unresolved_helpers,0,,
+0x4574,FUN_00004574,FUN_00004574,unresolved_helpers,0,,
+0x4584,FUN_00004584,FUN_00004584,unresolved_helpers,0,,0x025C 0x0272 0x0280 0x4884
+0x4660,FUN_00004660,FUN_00004660,unresolved_helpers,0,extraout_r2 extraout_r3,0x12F0
+0x46A0,FUN_000046a0,FUN_000046a0,unresolved_helpers,0,extraout_r2 extraout_r3,0x12F0
+0x46E0,FUN_000046e0,FUN_000046e0,unresolved_helpers,0,,0x113C
+0x470C,commit_settings_record,FUN_0000470c,configuration_flash,0,,0x0110 0x113C 0x1164 0x3052 0x3978 0x46A0 0x52CC 0x570C 0x583C 0x5874 0x58A0 0x5BD4
+0x4884,display_three_lines,display_three_lines,interface,0,,0x14B8 0x4A2C 0x4B70 0x4D64
+0x492C,FUN_0000492c,FUN_0000492c,unresolved_helpers,0,,0x1318 0x1430 0x2DE8 0x4A00 0x4D84
+0x4A00,FUN_00004a00,FUN_00004a00,unresolved_helpers,0,,0x14B8 0x4D64
+0x4A2C,FUN_00004a2c,FUN_00004a2c,unresolved_helpers,0,,0x0272
+0x4B70,FUN_00004b70,FUN_00004b70,unresolved_helpers,0,,
+0x4C8C,FUN_00004c8c,FUN_00004c8c,unresolved_helpers,0,,0x08C0 0x08EC 0x0908 0x0B84 0x0BA0 0x0FEC 0x137C 0x1408 0x1430 0x1578 0x160E 0x1924
+0x4D64,FUN_00004d64,FUN_00004d64,unresolved_helpers,0,,0x4D84
+0x4D84,FUN_00004d84,FUN_00004d84,unresolved_helpers,0,,0x14B8
+0x4D94,FUN_00004d94,FUN_00004d94,unresolved_helpers,0,,0x2DE8 0x3F28 0x4884
+0x4DC8,origin_return_candidate,origin_return_candidate,motor_adc_motion,6,,0x013C 0x15EC 0x2D98 0x342C 0x3488 0x34A4 0x373A 0x3B70 0x3B9C 0x3F28 0x4884 0x4D94 0x588C 0x5918
+0x5030,FUN_00005030,FUN_00005030,unresolved_helpers,0,,0x50F0
+0x505C,FUN_0000505c,FUN_0000505c,unresolved_helpers,0,,0x137C 0x1408 0x1430 0x16C4
+0x50F0,FUN_000050f0,FUN_000050f0,unresolved_helpers,0,,
+0x51DC,read_encoder_candidate,FUN_000051dc,encoder_calibration,0,,
+0x52CC,copy_runtime_settings,FUN_000052cc,configuration_flash,0,,
+0x5368,load_or_initialize_settings,FUN_00005368,configuration_flash,0,,0x3978 0x4660 0x52CC
+0x54CC,calibration_work_candidate,calibration_work_candidate,encoder_calibration,0,,0x279C 0x2DE8 0x342C 0x3470 0x34A4 0x34C0 0x3534 0x373A 0x3B70 0x3B9C 0x3CAC 0x3F28 0x4574 0x4884 0x5874 0x58A0 0x5A38
+0x560C,FUN_0000560c,FUN_0000560c,unresolved_helpers,0,,0x239C 0x2DE8 0x4884
+0x570C,FUN_0000570c,FUN_0000570c,unresolved_helpers,1,,0x267C 0x2DE8 0x3CAC 0x3F28 0x4568 0x4574 0x4884 0x5030
+0x583C,FUN_0000583c,FUN_0000583c,unresolved_helpers,0,,
+0x5874,FUN_00005874,FUN_00005874,unresolved_helpers,0,,0x3B70 0x3DD4 0x588C
+0x588C,FUN_0000588c,FUN_0000588c,unresolved_helpers,0,,
+0x58A0,FUN_000058a0,FUN_000058a0,unresolved_helpers,0,,0x0D3C 0x2090 0x3040 0x3E54
+0x5918,FUN_00005918,FUN_00005918,unresolved_helpers,0,,
+0x59C8,FUN_000059c8,FUN_000059c8,unresolved_helpers,0,,0x2DE8 0x342C 0x3470 0x5A38
+0x5A38,FUN_00005a38,FUN_00005a38,unresolved_helpers,0,,0x013C 0x373A 0x51DC
+0x5B84,FUN_00005b84,FUN_00005b84,unresolved_helpers,0,,0x0FEC 0x1FB8 0x1FCC 0x1FE4 0x1FFC 0x2010 0x2D84
+0x5BD4,FUN_00005bd4,FUN_00005bd4,unresolved_helpers,0,,0x0D3C 0x0FEC 0x1924 0x21F0 0x2D84 0x5C50
+0x5C50,FUN_00005c50,FUN_00005c50,unresolved_helpers,1,,0x5CE8
+0x5CA0,FUN_00005ca0,FUN_00005ca0,unresolved_helpers,0,in_r3,0x137C
+0x5CE8,FUN_00005ce8,FUN_00005ce8,unresolved_helpers,0,,
+0x5D08,FUN_00005d08,FUN_00005d08,unresolved_helpers,0,extraout_r1 extraout_r1_00,0x013C
+0x6D14,motion_timer_irq,motion_timer_irq,motor_adc_motion,0,,0x013C 0x01B0 0x26CC 0x342C 0x3470 0x3488 0x373A 0x3744 0x3F28 0x51DC 0x5874
+0x70DC,uart_dispatch,uart_dispatch,uart,5,in_r3,0x0908 0x0924 0x093C 0x15EC 0x2090 0x2334 0x2D34 0x2E38 0x3052 0x3938 0x3A18 0x3FCC 0x404C 0x4084 0x41C8 0x420C 0x4244 0x4288 0x42C0 0x4360 0x439C 0x43D0 0x4400 0x442C 0x4464 0x470C 0x5CE8

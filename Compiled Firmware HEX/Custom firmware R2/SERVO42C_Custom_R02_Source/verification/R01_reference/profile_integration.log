@@ -1,0 +1,19 @@
+Factory dump SHA256: a17a42ad07816278b51dbe750d4527881b5b564f5d687449248464e19266809a
+Candidate application SHA256: 5156a1b9bbbf8aadb8ce08f736142019a71c103ba5bcb1314277798dba2a12e4
+PASS 0 saved slots: slot=0x7C00 mode=1 baud=0 address=0xE0 kp_raw=1638; settings RAM and UART apply match factory
+PASS 1 saved slots: slot=0x7C00 mode=1 baud=0 address=0xE0 kp_raw=1638; settings RAM and UART apply match factory
+PASS 2 saved slots: slot=0x7C40 mode=2 baud=0 address=0xE0 kp_raw=1638; settings RAM and UART apply match factory
+PASS 3 saved slots: slot=0x7C80 mode=2 baud=115200 address=0xE0 kp_raw=65535; settings RAM and UART apply match factory
+PASS exact full dump: slot=0x7C80 mode=2 baud=115200 address=0xE0 kp_raw=65535; settings RAM and UART apply match factory
+PASS invalid latest marker: slot=0x7C80 mode=1 baud=0 address=0xE0 kp_raw=1638; settings RAM and UART apply match factory
+PASS: 6 settings-history/load and UART configuration scenarios; actual dump plus controlled variants.
+PASS menu_control_mode(2): original/reconstructed menu and flash writes match; captured-vs-ideal slot byte differences []
+PASS menu_uart_baud(6): original/reconstructed menu and flash writes match; captured-vs-ideal slot byte differences [('0x7caa', 'FF', '66'), ('0x7cab', 'FF', '06')]
+PASS: two actual menu changes replayed through original and reconstructed machine code with idealized NOR storage; physical flash faults and unobserved history are not modeled.
+PASS: 16 reset-to-application checkpoint runs; initialized RAM, identity success/failure branches and startup flag verified. Physical initialization and diagnostics mocked.
+PASS: 384 full read-only UART exchanges, byte-level packet oracle and factory instruction comparisons (RAM/MMIO effects).
+PASS: 128 settings-load scenarios, including blank and invalid records compared with factory instructions.
+PASS: 70 startup current-offset scenarios (inclusive limits, outliers, polling, and error-vs-success control flow) matched factory instructions. ADC values and hardware calls modeled; not electrical validation.
+PASS: 96 relocated motion-timer IRQ scenarios including stall threshold and protection; factory RAM and MMIO compared. Encoder and NVIC configuration modeled.
+PASS: 96 relocated current ADC IRQ scenarios including PWM outputs and low-input reset; RAM and modeled MMIO matched factory instructions.
+PASS: requested software comparison checks. Hardware timing and behavior remain unverified.

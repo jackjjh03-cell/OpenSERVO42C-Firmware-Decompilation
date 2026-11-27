@@ -1,0 +1,688 @@
+{
+  "scatter_source": "0x7814",
+  "initialized_bytes": 1576,
+  "cleared_bytes": 1068,
+  "menu_rows": 28,
+  "unique_callbacks": 20,
+  "option_tables": 15,
+  "assets": [
+    {
+      "name": "msg_startup_error",
+      "original_start": 3948,
+      "size": 7,
+      "sha256": "2917841e5f52fdd208c069c5fd0871bc20f5bd3a3dcee317568e6c3e3c6ab597"
+    },
+    {
+      "name": "msg_startup_line",
+      "original_start": 3956,
+      "size": 6,
+      "sha256": "6e288f4590327d0d98a54260dd1bcf3df88eee5da0c9bb67443959f6373942d6"
+    },
+    {
+      "name": "msg_startup_phase",
+      "original_start": 3964,
+      "size": 6,
+      "sha256": "baea4e05ad269e4a56674b8c3d40d451f86a646bc1cbec4179e9d4c75f7c1af3"
+    },
+    {
+      "name": "msg_startup_enter",
+      "original_start": 3976,
+      "size": 8,
+      "sha256": "66de29b597d416b915546ceea281ffab2a01aa8d18c3af74423fd09e90511eb9"
+    },
+    {
+      "name": "msg_startup_error_0f90",
+      "original_start": 3984,
+      "size": 8,
+      "sha256": "eef09ffe625fccdd7168c34c62ad19201da52a006d02f91247564778f863bafc"
+    },
+    {
+      "name": "msg_startup_encoder",
+      "original_start": 3992,
+      "size": 8,
+      "sha256": "bb54122ccac4363ad464411d4a068df402987a1be19dc393a66e39134bbbbb1d"
+    },
+    {
+      "name": "msg_startup_strong",
+      "original_start": 4004,
+      "size": 9,
+      "sha256": "5641ea4392ab14acc86a5d9ddf8e2c6fba96e086a0a640e7bd213d7797847782"
+    },
+    {
+      "name": "msg_startup_blank",
+      "original_start": 4012,
+      "size": 1,
+      "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+    },
+    {
+      "name": "msg_startup_magnet",
+      "original_start": 4016,
+      "size": 7,
+      "sha256": "577030d3071f9d2a4e4c7719ce6fc4786bfad22636282f83a2d19a495c0dfa54"
+    },
+    {
+      "name": "msg_startup_weak",
+      "original_start": 4024,
+      "size": 7,
+      "sha256": "a2740c78adf7d92d49529426df937e042c71691a30c3bfb45dc6aae1abb2bd11"
+    },
+    {
+      "name": "msg_startup_loss",
+      "original_start": 4032,
+      "size": 7,
+      "sha256": "682c92b0514c7ecb12de7854ab82e724451e572a1cfd977dbe96076442dac446"
+    },
+    {
+      "name": "msg_startup_type",
+      "original_start": 4040,
+      "size": 6,
+      "sha256": "af2057bfd3875f22906987361cdd89faa03fc0511f0ccbd20b868542ecdaa415"
+    },
+    {
+      "name": "msg_startup_motor",
+      "original_start": 4048,
+      "size": 6,
+      "sha256": "5deee63792232f64ddd5dd2121f0d4de8e4d489fe11aad508109ab63eec2700b"
+    },
+    {
+      "name": "msg_startup_not_cal",
+      "original_start": 4056,
+      "size": 8,
+      "sha256": "25d759ed9be0eb93568663e039ceef97070c813ffb6e3ee7a4b16ea3ef9feb96"
+    },
+    {
+      "name": "msg_protection_enter",
+      "original_start": 7348,
+      "size": 8,
+      "sha256": "66de29b597d416b915546ceea281ffab2a01aa8d18c3af74423fd09e90511eb9"
+    },
+    {
+      "name": "msg_protection_protect",
+      "original_start": 7356,
+      "size": 10,
+      "sha256": "d23adef97adf5be6fc0eb348f5f18a3f9771bfba9022814ba5d42a66fad34893"
+    },
+    {
+      "name": "msg_protection_wrong",
+      "original_start": 7368,
+      "size": 6,
+      "sha256": "b07e5cfa108c03ce791f70f6716282ade7de470d8853cde98afa635b3c44dc26"
+    },
+    {
+      "name": "msg_current_offset_error",
+      "original_start": 9552,
+      "size": 7,
+      "sha256": "2917841e5f52fdd208c069c5fd0871bc20f5bd3a3dcee317568e6c3e3c6ab597"
+    },
+    {
+      "name": "msg_current_offset_current",
+      "original_start": 9560,
+      "size": 9,
+      "sha256": "ffba051970ba24464512b2856acbb137418c4a03df1bbb613e3b6dd098821126"
+    },
+    {
+      "name": "msg_current_offset_offset",
+      "original_start": 9572,
+      "size": 7,
+      "sha256": "69b7066e447769e258ee83148ae99cbf4ce79f34a0022c95fb6a454402089641"
+    },
+    {
+      "name": "msg_lookup_error",
+      "original_start": 10116,
+      "size": 7,
+      "sha256": "2917841e5f52fdd208c069c5fd0871bc20f5bd3a3dcee317568e6c3e3c6ab597"
+    },
+    {
+      "name": "msg_lookup_lookup",
+      "original_start": 10124,
+      "size": 7,
+      "sha256": "cf09ebc2e012d88e7ad6804e57e33d0a66d8fe018e316fb7122e983219f4a925"
+    },
+    {
+      "name": "msg_lookup_reverse",
+      "original_start": 10132,
+      "size": 8,
+      "sha256": "aea1926cad02335a52d57d630b3b7c4994a6673c5e861497fd26bb0b67752dad"
+    },
+    {
+      "name": "msg_calibration_blank",
+      "original_start": 11932,
+      "size": 1,
+      "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+    },
+    {
+      "name": "msg_calibration_cal",
+      "original_start": 11936,
+      "size": 7,
+      "sha256": "05fcf291247cabfdcc34943bf6c07eb2bf1d7c9fe060cdc36c3ee2d1bcb82ba1"
+    },
+    {
+      "name": "msg_calibration_mode",
+      "original_start": 11944,
+      "size": 5,
+      "sha256": "f65b1f2b41824c93509fb8370d10b898abfe2eac19497efed0a77ff8ec2b80b6"
+    },
+    {
+      "name": "msg_calibration_cr_open",
+      "original_start": 11952,
+      "size": 9,
+      "sha256": "d178a2ef22fe836f511b8852c8f8fd35f8e5eb1f2d5a67e280c51b4cc6573051"
+    },
+    {
+      "name": "msg_calibration_it_is",
+      "original_start": 11964,
+      "size": 6,
+      "sha256": "b2923106ff2ea1b62324144350676e03c44ea915ce5c021d5eab4ecb0d2d380e"
+    },
+    {
+      "name": "msg_origin_mode_set",
+      "original_start": 12136,
+      "size": 5,
+      "sha256": "68feccdf264abaff2ccd9857303376c66148d6ba6d79f34a542d3c974747a5e9"
+    },
+    {
+      "name": "msg_origin_mode_not",
+      "original_start": 12144,
+      "size": 5,
+      "sha256": "ee8b0304327fe3127471bd7e05fcd2dec8232bc542731cbbb69048ac01b30534"
+    },
+    {
+      "name": "msg_origin_mode_origin",
+      "original_start": 12152,
+      "size": 7,
+      "sha256": "c3ca4073874cf4be9d128c6982f46e394e5f939db97f16f1860856ea525f1f50"
+    },
+    {
+      "name": "msg_origin_mode_disable",
+      "original_start": 12160,
+      "size": 8,
+      "sha256": "6d9339371002cea2f3e433037beac6e025ed0b4ab6cb7e30902d2aa5f369f480"
+    },
+    {
+      "name": "msg_origin_mode_is",
+      "original_start": 12168,
+      "size": 4,
+      "sha256": "fd75db21ea1ba0f697c2b51a128e292d7cf82bd4a5a0657f711d36c06225d314"
+    },
+    {
+      "name": "msg_origin_mode_0_mode",
+      "original_start": 12172,
+      "size": 7,
+      "sha256": "efef59d19e892a77aacc25ad6fbe4da67e00e784fda5c5e2021c4d07b62da83c"
+    },
+    {
+      "name": "msg_origin_mode_mode",
+      "original_start": 12184,
+      "size": 5,
+      "sha256": "f65b1f2b41824c93509fb8370d10b898abfe2eac19497efed0a77ff8ec2b80b6"
+    },
+    {
+      "name": "msg_origin_mode_cr_open",
+      "original_start": 12192,
+      "size": 9,
+      "sha256": "d178a2ef22fe836f511b8852c8f8fd35f8e5eb1f2d5a67e280c51b4cc6573051"
+    },
+    {
+      "name": "msg_origin_mode_it_is",
+      "original_start": 12204,
+      "size": 6,
+      "sha256": "b2923106ff2ea1b62324144350676e03c44ea915ce5c021d5eab4ecb0d2d380e"
+    },
+    {
+      "name": "msg_version_v1_1_3",
+      "original_start": 12284,
+      "size": 7,
+      "sha256": "4777dae15d0f93a54e6ddfaf8e3c70e99722c959036f6b37c8e6adf2564355bd"
+    },
+    {
+      "name": "msg_version_servo42c",
+      "original_start": 12292,
+      "size": 9,
+      "sha256": "239c26743a99c29b8bb00d15245e7c5c0f857c6fb42db07a633e22c7d13abc48"
+    },
+    {
+      "name": "msg_version_mks",
+      "original_start": 12304,
+      "size": 4,
+      "sha256": "88d71fe7a3d51599384aa1e8329d09c572e8da116540227be0c184af74785f02"
+    },
+    {
+      "name": "msg_restore_blank",
+      "original_start": 14692,
+      "size": 1,
+      "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+    },
+    {
+      "name": "msg_restore_ok",
+      "original_start": 14696,
+      "size": 6,
+      "sha256": "ea6efedea946a41351c3449c4254bc90dc47246db3c5852f89da610b96f37efb"
+    },
+    {
+      "name": "msg_restore_reload",
+      "original_start": 14704,
+      "size": 8,
+      "sha256": "ff7e2ffb7762313ea6e1f7b431fefcaf74b88a258acd6c8c79350cde84da0686"
+    },
+    {
+      "name": "msg_interpolation_error",
+      "original_start": 16144,
+      "size": 7,
+      "sha256": "2917841e5f52fdd208c069c5fd0871bc20f5bd3a3dcee317568e6c3e3c6ab597"
+    },
+    {
+      "name": "msg_interpolation_reboot",
+      "original_start": 16152,
+      "size": 8,
+      "sha256": "92b4e57a8045101926d27f2559f9a9db8978a0a2c9cb3c98b7e9500369b8ce60"
+    },
+    {
+      "name": "msg_interpolation_dx_0",
+      "original_start": 16160,
+      "size": 6,
+      "sha256": "6d25c1180e44ba38dd1e183745c2bce06e3a06a559b4299304633f062fd5260d"
+    },
+    {
+      "name": "msg_set_origin_done",
+      "original_start": 17696,
+      "size": 6,
+      "sha256": "3c186bb6346a2e32cbf62f3247734cff4ac2bac63cc3e41abe3bc02abdfa7222"
+    },
+    {
+      "name": "msg_set_origin_set",
+      "original_start": 17704,
+      "size": 5,
+      "sha256": "68feccdf264abaff2ccd9857303376c66148d6ba6d79f34a542d3c974747a5e9"
+    },
+    {
+      "name": "msg_set_origin_origin",
+      "original_start": 17712,
+      "size": 7,
+      "sha256": "c3ca4073874cf4be9d128c6982f46e394e5f939db97f16f1860856ea525f1f50"
+    },
+    {
+      "name": "msg_set_origin_disable",
+      "original_start": 17720,
+      "size": 8,
+      "sha256": "6d9339371002cea2f3e433037beac6e025ed0b4ab6cb7e30902d2aa5f369f480"
+    },
+    {
+      "name": "msg_set_origin_is",
+      "original_start": 17728,
+      "size": 4,
+      "sha256": "fd75db21ea1ba0f697c2b51a128e292d7cf82bd4a5a0657f711d36c06225d314"
+    },
+    {
+      "name": "msg_set_origin_0_mode",
+      "original_start": 17732,
+      "size": 7,
+      "sha256": "efef59d19e892a77aacc25ad6fbe4da67e00e784fda5c5e2021c4d07b62da83c"
+    },
+    {
+      "name": "msg_set_origin_mode",
+      "original_start": 17740,
+      "size": 5,
+      "sha256": "f65b1f2b41824c93509fb8370d10b898abfe2eac19497efed0a77ff8ec2b80b6"
+    },
+    {
+      "name": "msg_set_origin_cr_open",
+      "original_start": 17748,
+      "size": 9,
+      "sha256": "d178a2ef22fe836f511b8852c8f8fd35f8e5eb1f2d5a67e280c51b4cc6573051"
+    },
+    {
+      "name": "msg_set_origin_it_is",
+      "original_start": 17760,
+      "size": 6,
+      "sha256": "b2923106ff2ea1b62324144350676e03c44ea915ce5c021d5eab4ecb0d2d380e"
+    },
+    {
+      "name": "msg_origin_failure_fail",
+      "original_start": 19888,
+      "size": 8,
+      "sha256": "9c18442e203c5c93405c233187349853e20bea20846ae68fab13170ade9f4e07"
+    },
+    {
+      "name": "msg_origin_failure_origin",
+      "original_start": 19896,
+      "size": 8,
+      "sha256": "547267564dbf31240ae8ba13f8fa0f9a657669b823df381dd3314f68a1e6158f"
+    },
+    {
+      "name": "msg_origin_failure_back_to",
+      "original_start": 19904,
+      "size": 8,
+      "sha256": "e37e388dd6791d644f3208b29a450252fdbf5235fc9e095f1c0a9e9c59811c2d"
+    },
+    {
+      "name": "msg_origin_progress_origin",
+      "original_start": 20472,
+      "size": 9,
+      "sha256": "4035ab327f46c95cd79e035561dbab6f9bfd5fed56b7f4404fc26fac8732a503"
+    },
+    {
+      "name": "msg_origin_progress_back_to",
+      "original_start": 20484,
+      "size": 9,
+      "sha256": "8289fc476a0d7e034344bb0ae0facac7913cbcd4f352d86278df05f6501effc2"
+    },
+    {
+      "name": "msg_origin_progress_coming",
+      "original_start": 20496,
+      "size": 7,
+      "sha256": "4323ec4ee0a8253b2c797df45a7c3bea6ba28ad758efcb385104a4bf77b8b5bc"
+    },
+    {
+      "name": "msg_calibration_progress_blank",
+      "original_start": 21984,
+      "size": 1,
+      "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+    },
+    {
+      "name": "msg_calibration_progress_cal",
+      "original_start": 21988,
+      "size": 7,
+      "sha256": "05fcf291247cabfdcc34943bf6c07eb2bf1d7c9fe060cdc36c3ee2d1bcb82ba1"
+    },
+    {
+      "name": "msg_power_power",
+      "original_start": 22104,
+      "size": 7,
+      "sha256": "3a65de864737a789805b08387a74064da2ef394f9c9f83da534b3f5928a9963c"
+    },
+    {
+      "name": "msg_power_v",
+      "original_start": 22112,
+      "size": 4,
+      "sha256": "6e8072260dea51e708478ad296fb13bb5512cc48d1d90eddd2e50c0019958660"
+    },
+    {
+      "name": "msg_power_waiting",
+      "original_start": 22116,
+      "size": 8,
+      "sha256": "a03776ca96d48c3882af49522243f1c1b4a6720c8097ee9b5dd04880995c274b"
+    },
+    {
+      "name": "msg_mode_enter",
+      "original_start": 22504,
+      "size": 8,
+      "sha256": "66de29b597d416b915546ceea281ffab2a01aa8d18c3af74423fd09e90511eb9"
+    },
+    {
+      "name": "msg_mode_error",
+      "original_start": 22512,
+      "size": 8,
+      "sha256": "eef09ffe625fccdd7168c34c62ad19201da52a006d02f91247564778f863bafc"
+    },
+    {
+      "name": "msg_mode_encoder",
+      "original_start": 22520,
+      "size": 8,
+      "sha256": "bb54122ccac4363ad464411d4a068df402987a1be19dc393a66e39134bbbbb1d"
+    },
+    {
+      "name": "msg_mode_strong",
+      "original_start": 22532,
+      "size": 9,
+      "sha256": "5641ea4392ab14acc86a5d9ddf8e2c6fba96e086a0a640e7bd213d7797847782"
+    },
+    {
+      "name": "msg_mode_blank",
+      "original_start": 22540,
+      "size": 1,
+      "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+    },
+    {
+      "name": "msg_mode_magnet",
+      "original_start": 22544,
+      "size": 7,
+      "sha256": "577030d3071f9d2a4e4c7719ce6fc4786bfad22636282f83a2d19a495c0dfa54"
+    },
+    {
+      "name": "msg_mode_weak",
+      "original_start": 22552,
+      "size": 7,
+      "sha256": "a2740c78adf7d92d49529426df937e042c71691a30c3bfb45dc6aae1abb2bd11"
+    },
+    {
+      "name": "msg_mode_loss",
+      "original_start": 22560,
+      "size": 7,
+      "sha256": "682c92b0514c7ecb12de7854ab82e724451e572a1cfd977dbe96076442dac446"
+    },
+    {
+      "name": "msg_mode_not_cal",
+      "original_start": 22568,
+      "size": 8,
+      "sha256": "25d759ed9be0eb93568663e039ceef97070c813ffb6e3ee7a4b16ea3ef9feb96"
+    },
+    {
+      "name": "telemetry_messages",
+      "original_start": 24040,
+      "size": 46,
+      "sha256": "4450291caf65579c72c5ecef1e03594c7f77f24d2009b8f1e7ac3c307ff54362"
+    },
+    {
+      "name": "sine_q14",
+      "original_start": 24086,
+      "size": 2560,
+      "sha256": "25032e0006c0a329b5ee543d8321aeeef7da88cbb585ccd8f265397cbc87c04e"
+    },
+    {
+      "name": "oled_font",
+      "original_start": 26646,
+      "size": 1278,
+      "sha256": "a6f4056ee56c62412674c6d052070951271ffa8eb6d556735b644c6fc901be57"
+    },
+    {
+      "name": "flash_timing_coefficients",
+      "original_start": 8612,
+      "size": 32,
+      "sha256": "ee7089309cc911265a5c9d695c758ed411d7e0b2a2844569ce1412da223786f7"
+    },
+    {
+      "name": "oscillator_frequencies",
+      "original_start": 8652,
+      "size": 16,
+      "sha256": "43e1cc868697f4b4f77d1dacab595806f54d0372ba111408990b5c71b6a3a9e5"
+    },
+    {
+      "name": "uart_prescale_words",
+      "original_start": 3428,
+      "size": 8,
+      "sha256": "080d5756a63b046cb8e8c401b94e5f6ca20288e232a159239b13c25eef03fb65"
+    }
+  ],
+  "callbacks": [
+    {
+      "offset": 856,
+      "old_address": 11833,
+      "symbol": "factory_calibrate"
+    },
+    {
+      "offset": 876,
+      "old_address": 17249,
+      "symbol": "menu_motor_type"
+    },
+    {
+      "offset": 896,
+      "old_address": 11573,
+      "symbol": "menu_control_mode"
+    },
+    {
+      "offset": 916,
+      "old_address": 16841,
+      "symbol": "menu_current"
+    },
+    {
+      "offset": 936,
+      "old_address": 17089,
+      "symbol": "menu_microsteps"
+    },
+    {
+      "offset": 956,
+      "old_address": 16965,
+      "symbol": "menu_enable"
+    },
+    {
+      "offset": 976,
+      "old_address": 16909,
+      "symbol": "menu_direction"
+    },
+    {
+      "offset": 996,
+      "old_address": 16461,
+      "symbol": "menu_autosdd"
+    },
+    {
+      "offset": 1016,
+      "old_address": 17509,
+      "symbol": "menu_protection"
+    },
+    {
+      "offset": 1036,
+      "old_address": 17033,
+      "symbol": "menu_interpolation"
+    },
+    {
+      "offset": 1056,
+      "old_address": 16517,
+      "symbol": "menu_uart_baud"
+    },
+    {
+      "offset": 1076,
+      "old_address": 17309,
+      "symbol": "menu_uart_address"
+    },
+    {
+      "offset": 1096,
+      "old_address": 17453,
+      "symbol": "menu_origin_mode"
+    },
+    {
+      "offset": 1116,
+      "old_address": 17577,
+      "symbol": "factory_menu_set_origin"
+    },
+    {
+      "offset": 1136,
+      "old_address": 17409,
+      "symbol": "menu_origin_speed"
+    },
+    {
+      "offset": 1156,
+      "old_address": 17361,
+      "symbol": "menu_origin_direction"
+    },
+    {
+      "offset": 1176,
+      "old_address": 11973,
+      "symbol": "factory_menu_goto_origin"
+    },
+    {
+      "offset": 1196,
+      "old_address": 16333,
+      "symbol": "menu_acceleration"
+    },
+    {
+      "offset": 1216,
+      "old_address": 14649,
+      "symbol": "callback_factory_restore"
+    },
+    {
+      "offset": 1236,
+      "old_address": 17013,
+      "symbol": "callback_menu_exit"
+    },
+    {
+      "offset": 1276,
+      "old_address": 11833,
+      "symbol": "factory_calibrate"
+    },
+    {
+      "offset": 1296,
+      "old_address": 17249,
+      "symbol": "menu_motor_type"
+    },
+    {
+      "offset": 1316,
+      "old_address": 11573,
+      "symbol": "menu_control_mode"
+    },
+    {
+      "offset": 1336,
+      "old_address": 17013,
+      "symbol": "callback_menu_exit"
+    },
+    {
+      "offset": 1376,
+      "old_address": 17249,
+      "symbol": "menu_motor_type"
+    },
+    {
+      "offset": 1396,
+      "old_address": 11573,
+      "symbol": "menu_control_mode"
+    },
+    {
+      "offset": 1436,
+      "old_address": 17509,
+      "symbol": "menu_protection"
+    },
+    {
+      "offset": 1456,
+      "old_address": 17013,
+      "symbol": "callback_menu_exit"
+    }
+  ],
+  "vectors": [
+    "__stack_top",
+    "reset_handler",
+    "default_handler",
+    "hardfault_handler",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "default_handler",
+    null,
+    null,
+    "default_handler",
+    "empty_16e4",
+    "empty_05e8",
+    "enable_input_irq",
+    "empty_05f0",
+    "empty_05f2",
+    "current_adc_irq",
+    "motion_timer_irq",
+    "uart0_irq",
+    "empty_063a",
+    "empty_04a4",
+    "empty_04ac",
+    "empty_0602",
+    "empty_060a",
+    "empty_14b0",
+    "empty_1570",
+    "empty_0612",
+    "empty_061a",
+    "auxiliary_timer_irq",
+    "empty_049c",
+    "empty_0622",
+    "empty_062a",
+    "empty_0632",
+    "empty_0548",
+    "empty_0cc4",
+    "empty_05fa",
+    "startup_adc_irq",
+    "empty_0550",
+    "empty_063c",
+    "empty_0644",
+    "empty_04b4",
+    "empty_0494",
+    "empty_106c",
+    "empty_045c"
+  ]
+}

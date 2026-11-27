@@ -1,0 +1,1 @@
+PASS: 285 external C function names checked across factory translation units; no inconsistent declaration types.

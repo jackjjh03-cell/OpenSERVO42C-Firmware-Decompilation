@@ -1,0 +1,10 @@
+PASS: profiling wrapper, scripted IRQ count/load/peak and suspension on timer reuse.
+PASS: 63 OLED data pages, every category, three value ranges, main-menu append/wrap, exit, live refresh, fault priority and explicit cancellation.
+PASS: 256 custom diagnostic selector/response cases, checksum and read-only state.
+PASS: 67 retained glyphs rendered identically to stock in all three rows (framebuffer comparison).
+PASS: candidate application extent 31152, reserved flash starts at 0x7a00.
+PASS: original/rebuilt device identity routine, matching and mismatching modeled transform; hardware register writes match; original reserved bytes retained, no enrollment marker.
+PASS: 12 startup encoder-fault paths (4 status codes x timeout/Menu/Enter), 10-second scripted timeout, motor/UART shutdown and full menu entry.
+PASS: real locked settings commits, mode changes, enable/baud changes, blocked motion actions, SysInfo and return to lock display; reserved non-settings regions unchanged.
+PASS: 10 measured RPM model samples (zero, forward/reverse, 32-bit wrap, 3000 RPM), rebase, drive-off and original pulse display toggle.
+Hardware, actual encoder timing, and motor power-stage behavior remain unverified.

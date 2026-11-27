@@ -1,0 +1,8 @@
+{
+  "status": "UNVALIDATED OFFLINE CANDIDATE; NOT APPROVED FOR FLASHING",
+  "application_sha256": "e3b2b28ec72994b981f7c4dcc35b88382be7dca142b96c22e6f289661a40e302",
+  "backup_sha256": "a17a42ad07816278b51dbe750d4527881b5b564f5d687449248464e19266809a",
+  "candidate_sha256": "d13c6c8ae1b1b39bed026ea6d02d65c4175c3e04230ea34a71d2a29cab93970b",
+  "application_extent": 31152,
+  "reserved_bytes_preserved": true
+}

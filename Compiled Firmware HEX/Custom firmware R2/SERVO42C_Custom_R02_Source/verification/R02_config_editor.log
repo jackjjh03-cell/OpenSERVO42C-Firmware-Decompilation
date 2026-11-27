@@ -1,0 +1,1 @@
+PASS: host editor mock serial query, confirmed setter/readback, three drive/motion guards and checksum failure.

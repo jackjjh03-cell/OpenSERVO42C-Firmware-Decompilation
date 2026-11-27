@@ -1,0 +1,5 @@
+Application SHA256: bde0de965a284ec8eff5db4ef7a14b7b24c0cc051350ba060d7cfd0edcd3a594
+PASS: 64 differential settings commits, including dirty slots, invalid markers, full-page rollover; workspace, ordered NOR operations, MMIO, callbacks and reserved flash compared.
+PASS: 8 differential flash primitive cases, including timeout and rejected mode; modeled MMIO and flash effects.
+PASS: 96 differential origin-return cases with scripted settling; return, workspace, display and callback sequence compared. Delay timing and physical response not modeled.
+PASS: 8 differential complete calibration sweep sequences, 400 scripted encoder samples each; averaging, wrap logic, workspace and callback order compared. Physical step, flash, and electrical operations mocked.

@@ -1,0 +1,6 @@
+{
+  "status": "Unvalidated development build; not hardware tested",
+  "application_sha256": "e3b2b28ec72994b981f7c4dcc35b88382be7dca142b96c22e6f289661a40e302",
+  "loaded_extent_bytes": 31152,
+  "free_before_identity": 80
+}

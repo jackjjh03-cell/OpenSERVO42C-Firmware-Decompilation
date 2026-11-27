@@ -1,0 +1,23 @@
+Factory dump SHA256: a17a42ad07816278b51dbe750d4527881b5b564f5d687449248464e19266809a
+Candidate application SHA256: bde0de965a284ec8eff5db4ef7a14b7b24c0cc051350ba060d7cfd0edcd3a594
+PASS 0 saved slots: slot=0x7C00 mode=1 baud=0 address=0xE0 kp_raw=1638; settings RAM and UART apply match factory
+PASS 1 saved slots: slot=0x7C00 mode=1 baud=0 address=0xE0 kp_raw=1638; settings RAM and UART apply match factory
+PASS 2 saved slots: slot=0x7C40 mode=2 baud=0 address=0xE0 kp_raw=1638; settings RAM and UART apply match factory
+PASS 3 saved slots: slot=0x7C80 mode=2 baud=115200 address=0xE0 kp_raw=65535; settings RAM and UART apply match factory
+PASS exact full dump: slot=0x7C80 mode=2 baud=115200 address=0xE0 kp_raw=65535; settings RAM and UART apply match factory
+PASS invalid latest marker: slot=0x7C80 mode=1 baud=0 address=0xE0 kp_raw=1638; settings RAM and UART apply match factory
+PASS: 6 settings-history/load and UART configuration scenarios; actual dump plus controlled variants.
+PASS menu_control_mode(2): original/reconstructed menu and flash writes match; captured-vs-ideal slot byte differences []
+PASS menu_uart_baud(6): original/reconstructed menu and flash writes match; captured-vs-ideal slot byte differences [('0x7caa', 'FF', '66'), ('0x7cab', 'FF', '06')]
+PASS: two actual menu changes replayed through original and reconstructed machine code with idealized NOR storage; physical flash faults and unobserved history are not modeled.
+PASS: 256 relocated telemetry scenarios, displayed strings and workspace compared; original signed 64-bit division modeled.
+PASS: 72 complete board-init scenarios; 20388 ordered peripheral/NVIC register writes matched; RAM and final register state matched. Original caller r4 derived from scatter loader; clock and delay scripted, hardware/interrupts not modeled.
+Original raw GPIO configuration differences with identical register effects: [((0, 2, (0, 80, 0, 0, 0, 1)), (0, 2, (0, 0, 0, 0, 0, 1))), ((0, 12, (112, 34, 0, 0, 0, 1)), (0, 12, (0, 0, 0, 0, 0, 1))), ((0, 15, (0, 80, 0, 0, 0, 1)), (0, 15, (0, 0, 0, 0, 0, 1))), ((64, 3, (0, 80, 0, 0, 0, 1)), (64, 3, (0, 0, 0, 0, 0, 1))), ((64, 6, (0, 80, 0, 0, 0, 1)), (64, 6, (0, 0, 0, 0, 0, 1)))]
+PASS: 24 actual reset-vector-to-identity-check executions; 9240 ordered register writes matched; scatter-loaded workspace matched after callback relocation. Original board entry r4=0x2270. Synthetic ROM trim, PLL-ready and SysTick reads; interrupts and electrical timing not modeled.
+PASS: 16 reset-to-application checkpoint runs; initialized RAM, identity success/failure branches and startup flag verified. Physical initialization and diagnostics mocked.
+PASS: 384 full read-only UART exchanges, byte-level packet oracle and factory instruction comparisons (RAM/MMIO effects).
+PASS: 128 settings-load scenarios, including blank and invalid records compared with factory instructions.
+PASS: 70 startup current-offset scenarios (inclusive limits, outliers, polling, and error-vs-success control flow) matched factory instructions. ADC values and hardware calls modeled; not electrical validation.
+PASS: 96 relocated motion-timer IRQ scenarios including stall threshold and protection; factory RAM and MMIO compared. Encoder and NVIC configuration modeled.
+PASS: 96 relocated current ADC IRQ scenarios including PWM outputs and low-input reset; RAM and modeled MMIO matched factory instructions.
+PASS: 10951 relocated UART dispatch cases against factory; all 36 opcodes, all byte arguments, unknown opcodes, wrong addresses, selected mode/state combinations. Callee arguments and workspace/MMIO effects compared; external effects mocked.

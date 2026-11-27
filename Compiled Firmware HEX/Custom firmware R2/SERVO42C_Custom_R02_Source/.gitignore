@@ -1,0 +1,8 @@
+/build/
+**/__pycache__/
+*.pyc
+*.hex
+*.bin
+!**/tests/original_initialized_ram.bin
+*.elf
+*.map

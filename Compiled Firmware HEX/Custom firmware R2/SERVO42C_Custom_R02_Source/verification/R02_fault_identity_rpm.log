@@ -1,0 +1,5 @@
+PASS: original/rebuilt device identity routine, matching and mismatching modeled transform; hardware register writes match; original reserved bytes retained, no enrollment marker.
+PASS: 12 startup encoder-fault paths (4 status codes x timeout/Menu/Enter), 10-second scripted timeout, motor/UART shutdown and full menu entry.
+PASS: real locked settings commits, mode changes, enable/baud changes, blocked motion actions, SysInfo and return to lock display; reserved non-settings regions unchanged.
+PASS: 10 measured RPM model samples (zero, forward/reverse, 32-bit wrap, 3000 RPM), rebase, drive-off, actual Next-key pulse/RPM toggle and retained display glyphs.
+Hardware, actual encoder timing, and motor power-stage behavior remain unverified.

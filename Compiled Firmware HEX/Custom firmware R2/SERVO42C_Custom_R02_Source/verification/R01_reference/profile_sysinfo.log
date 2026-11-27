@@ -1,0 +1,5 @@
+PASS: profiling wrapper, scripted IRQ count/load/peak and suspension on timer reuse.
+PASS: 63 OLED data pages, every category, three value ranges, main-menu append/wrap, exit, live refresh, fault priority and explicit cancellation.
+PASS: 256 custom diagnostic selector/response cases, checksum and read-only state.
+PASS: 67 retained glyphs rendered identically to stock in all three rows (framebuffer comparison).
+PASS: candidate application extent 31204, reserved flash starts at 0x7a00.

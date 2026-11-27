@@ -1,0 +1,19 @@
+{
+  "baseline_global_text_symbols": 272,
+  "custom_missing": [],
+  "profile_missing": [],
+  "custom_new": [
+    "sysinfo_cancel",
+    "sysinfo_open",
+    "sysinfo_poll",
+    "sysinfo_read"
+  ],
+  "profile_new": [
+    "sysinfo_cancel",
+    "sysinfo_open",
+    "sysinfo_poll",
+    "sysinfo_profile_irq",
+    "sysinfo_profile_suspend",
+    "sysinfo_read"
+  ]
+}
