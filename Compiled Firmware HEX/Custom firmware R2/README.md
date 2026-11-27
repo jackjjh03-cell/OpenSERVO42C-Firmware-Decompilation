@@ -4,7 +4,7 @@ Custom firmware for the MKS SERVO42C closed-loop stepper controller based on the
 
 R02 adds a system information menu, live RPM display, a settings-only mode for startup encoder faults and additional UART diagnostics. It also includes a PC configuration utility and a separate build for measuring motor interrupt performance.
 
-**Hardware status:** The normal R02 image has been successfully programmed and booted on the original SERVO42C controller. This is the first reported physical startup test of the custom firmware. Motor operation, RPM accuracy, the new fault interlock and the remaining functions still need individual hardware testing. The optional profiling build has not been hardware tested.
+**Hardware status:** Normal R02 has been flashed and is running on the original SERVO42C controller. Motor performance, RPM accuracy and the optional profiling build have not yet been independently verified.
 
 ## Hardware
 
@@ -125,6 +125,8 @@ Response: E0 00 00 06 66 4C  (example Kp = 1638)
 See [docs/SYSINFO.md](SERVO42C_Custom_R02_Source/docs/SYSINFO.md) for the full selector table and OLED labels. Control mode values are `0` (CR_OPEN), `1` (CR_vFOC) and `2` (CR_UART). Direction values are `0` (CW) and `1` (CCW).
 
 ## PC configuration utility
+
+[View or download config_editor.py](SERVO42C_Custom_R02_Source/tools/config_editor.py).
 
 The Python utility can read all 45 diagnostic fields and edit Kp, Ki, Kd, acceleration and torque using the original UART commands A1–A5. It requires confirmation before a write, checks for an idle, disabled UART drive and reads the value back. The checks are advisory software checks, not an independent safety interlock.
 
@@ -266,4 +268,4 @@ Profile: e3b2b28ec72994b981f7c4dcc35b88382be7dca142b96c22e6f289661a40e302
 
 ## Source notice
 
-This is an unofficial firmware reconstruction and modification, not an original Makerbase source release. The custom application is independently compilable but is not byte-identical to the factory HEX. The separate assembly reference in the main repository is used for exact reproduction of the original instructions. See [NOTICE.md](SERVO42C_Custom_R02_Source/NOTICE.md). Redistribution rights for vendor-derived code and assets have not been established.
+This is an unofficial firmware reconstruction and modification, not an original Makerbase source release. The custom application is independently compilable but is not byte-identical to the factory HEX. The separate assembly reference in the main repository is used for exact reproduction of the original instructions. See [NOTICE.md](SERVO42C_Custom_R02_Source/NOTICE.md). Project-authored code and documentation are available under the MIT license; see the root source notice for third-party material.
