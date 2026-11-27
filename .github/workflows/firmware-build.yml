@@ -1,0 +1,74 @@
+name: Firmware build
+
+on:
+  push:
+    paths:
+      - 'development/**'
+      - 'source/**'
+      - 'assembly/**'
+      - 'Compiled Firmware HEX/**'
+      - '.github/workflows/firmware-build.yml'
+  pull_request:
+    paths:
+      - 'development/**'
+      - 'source/**'
+      - 'assembly/**'
+      - 'Compiled Firmware HEX/**'
+      - '.github/workflows/firmware-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build firmware (LLVM 17)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-17 lld-17 llvm-17 ninja-build
+          echo /usr/lib/llvm-17/bin >> "$GITHUB_PATH"
+
+      - name: Check toolchain
+        run: |
+          clang --version
+          ld.lld --version
+          llvm-objcopy --version
+          cmake --version
+          ninja --version
+
+      - name: Build factory C
+        working-directory: development
+        run: |
+          cmake -S . -B build/factory -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arm-clang.cmake
+          cmake --build build/factory
+
+      - name: Check standalone C source
+        run: |
+          diff -r source/src development/factory/src
+          diff -r source/include development/factory/include
+          cmp source/layout.ld development/factory/layout.ld
+
+      - name: Build Custom R02
+        working-directory: 'Compiled Firmware HEX/Custom firmware R2/SERVO42C_Custom_R02_Source'
+        run: |
+          cmake -S . -B build/custom -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arm-clang.cmake
+          cmake --build build/custom
+
+      - name: Build Custom R02 profiling
+        working-directory: 'Compiled Firmware HEX/Custom firmware R2/SERVO42C_Custom_R02_Source'
+        run: |
+          cmake -S . -B build/profile -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arm-clang.cmake -DSYSINFO_PROFILE=ON
+          cmake --build build/profile
+
+      - name: Reassemble factory reference
+        working-directory: assembly
+        run: python3 build.py
