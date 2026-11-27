@@ -77,7 +77,7 @@ To generate a same-board image yourself (no programming takes place):
 python tools/export_board_image.py build/custom/servo42c.elf path/to/bin.hex private_build --acknowledge-unvalidated
 ```
 
-The exporter checks the backup revision, build hash, application range and exact reserved data preservation. The factory baseline traceability and validation documents are historic reference material. Current R02 verification logs are in `verification/`; prior R01 logs are in `verification/R01_reference/`. `python tools/test_r02.py build/custom/servo42c.elf path/to/bin.hex` runs the new fault, identity and RPM tests against the actual ELF and the same-board backup. `audit_factory.py --suite startup` compares unchanged startup/UI paths; the intentionally different R02 paths are exercised in the new test. The legacy `--extra` telemetry comparison is a baseline-only check unless the original pulse view is selected in its harness.
+The exporter checks the backup revision, build hash, application range and exact reserved data preservation. The factory baseline traceability and validation documents are historic reference material. Current R02 verification logs are in `verification/`, alongside historical test records. `python tools/test_r02.py build/custom/servo42c.elf path/to/bin.hex` runs the new fault, identity and RPM tests against the actual ELF and the same-board backup. `audit_factory.py --suite startup` compares unchanged startup/UI paths; the intentionally different R02 paths are exercised in the new test. The legacy `--extra` telemetry comparison is a baseline-only check unless the original pulse view is selected in its harness.
 
 ## Limitations
 
