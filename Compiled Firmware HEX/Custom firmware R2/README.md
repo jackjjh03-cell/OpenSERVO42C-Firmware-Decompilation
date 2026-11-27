@@ -145,12 +145,11 @@ The custom features fit without using the reserved device identity, settings or 
 Application partition: 31,232 bytes (0x0000–0x79FF)
 
 Factory C    30,428 B  [#############################-]  804 B free
-Custom R01   31,016 B  [##############################]  216 B free
 Custom R02   30,960 B  [##############################]  272 B free
 R02 Profile  31,152 B  [##############################]   80 B free
 ```
 
-R02 uses 56 fewer bytes than R01 despite adding the fault lockout and RPM display. The percentages are approximately 97.43%, 99.31%, 99.13% and 99.74% respectively. The factory C figure refers to the reconstructed application, not the byte-exact assembly build.
+Application flash usage is approximately 97.43% for the factory C build, 99.13% for R02 and 99.74% for the profiling build. The factory C figure refers to the reconstructed application, not the byte-exact assembly build.
 
 | Flash range | Purpose | R02 handling |
 |---|---|---|
@@ -274,8 +273,7 @@ Profile: e3b2b28ec72994b981f7c4dcc35b88382be7dca142b96c22e6f289661a40e302
 
 ## Revision history
 
-- **R01:** Added SysInfo, diagnostic UART command, PC tuning utility and optional interrupt profiling. Removed the startup banner and optimized display assets.
-- **R02:** Added the startup encoder-fault settings-only mode, encoder-derived RPM display and pulse-count toggle. Packed menu data to recover flash space. Retained the original device-ID check and board-specific flash regions. First reported successful physical boot of the normal custom build.
+- **R02 (first published custom revision):** Added SysInfo, diagnostic UART command, PC tuning utility, optional interrupt profiling, startup encoder-fault settings-only mode, encoder-derived RPM display and pulse-count toggle. Removed the startup banner and optimized display and menu data to recover flash space. Retained the original device-ID check and board-specific flash regions. First reported successful physical boot of the normal custom build.
 
 ## Source notice
 
