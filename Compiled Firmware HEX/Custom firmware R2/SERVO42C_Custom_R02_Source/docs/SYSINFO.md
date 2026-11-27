@@ -1,6 +1,6 @@
 # SysInfo diagnostic selector reference
 
-Command 0x8D is a Custom R01/R02 extension in the factory four-byte request group. Selectors below are decimal. All responses are unsigned 32-bit raw values, most zero-extended from byte or halfword fields. Where an OLED number would exceed its available width, raw hex is used. Motion fields show the low word of the corresponding value, not an atomic full 64-bit position. `Part` shows the Cortex CPUID part field (decimal), `Div` the clock divider, `Src` the clock source index. These register reads are specifically chosen; no arbitrary peripheral-register access is exposed.
+Command 0x8D is a Custom R02 extension in the factory four-byte request group. Selectors below are decimal. All responses are unsigned 32-bit raw values, most zero-extended from byte or halfword fields. Where an OLED number would exceed its available width, raw hex is used. Motion fields show the low word of the corresponding value, not an atomic full 64-bit position. `Part` shows the Cortex CPUID part field (decimal), `Div` the clock divider, `Src` the clock source index. These register reads are specifically chosen; no arbitrary peripheral-register access is exposed.
 
 | ID | Field | OLED label | Description |
 |---:|---|---|---|
