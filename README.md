@@ -131,6 +131,10 @@ See [the firmware reference](development/docs/FIRMWARE.md) for the larger module
 
 ## Building the firmware
 
+### Automated builds
+
+[GitHub Actions](https://github.com/jackjjh03-cell/SERVO42C-Firmware-Decompilation/actions) builds the factory C source, normal R02, the profiling variant and the assembly reference when firmware files change. It also checks that the standalone factory C files match the development tree. These checks run on Linux with LLVM 17; no controller or private flash backup is required. Passing a build check does not replace testing on the motor.
+
 ### Requirements
 
 - Clang/LLVM 17 with ARM target support, including `llvm-objdump`, `llvm-nm` and `llvm-objcopy`.
