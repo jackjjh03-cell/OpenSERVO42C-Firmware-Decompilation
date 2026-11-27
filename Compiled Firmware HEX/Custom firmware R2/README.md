@@ -122,7 +122,7 @@ Response: E0 00 00 06 66 4C  (example Kp = 1638)
 | 33–38 | Encoder angle, encoder status, LUT ready, knot valid, LUT valid, feedback position |
 | 39–44 | Startup state, stall, protection, ADC feedback 1, ADC feedback 2, phase index |
 
-See [docs/SYSINFO.md](docs/SYSINFO.md) for the full selector table and OLED labels. Control mode values are `0` (CR_OPEN), `1` (CR_vFOC) and `2` (CR_UART). Direction values are `0` (CW) and `1` (CCW).
+See [docs/SYSINFO.md](SERVO42C_Custom_R02_Source/docs/SYSINFO.md) for the full selector table and OLED labels. Control mode values are `0` (CR_OPEN), `1` (CR_vFOC) and `2` (CR_UART). Direction values are `0` (CW) and `1` (CCW).
 
 ## PC configuration utility
 
@@ -220,7 +220,7 @@ Main source changes:
 
 ## Programming
 
-Read [FLASHING.md](FLASHING.md) before programming. Keep a full original HEX backup and a working BOOT0/UART ISP recovery connection. Generate images for the same physical controller only; another board's identity and encoder calibration may not be valid on yours.
+Read [FLASHING.md](SERVO42C_Custom_R02_Source/FLASHING.md) before programming. Keep a full original HEX backup and a working BOOT0/UART ISP recovery connection. Generate images for the same physical controller only; another board's identity and encoder calibration may not be valid on yours.
 
 To export a complete 64 KiB image from the normal build and a matching factory backup:
 
@@ -236,7 +236,7 @@ Do not commit the original flash dump, full board-specific images or generated p
 
 ## Verification
 
-Software comparison tests execute the rebuilt and original instructions under modeled hardware where applicable. The following results are recorded in [verification/](verification/).
+Software comparison tests execute the rebuilt and original instructions under modeled hardware where applicable. The following results are recorded in [verification/](SERVO42C_Custom_R02_Source/verification/).
 
 | Test | Passing cases |
 |---|---:|
@@ -279,4 +279,4 @@ Profile: e3b2b28ec72994b981f7c4dcc35b88382be7dca142b96c22e6f289661a40e302
 
 ## Source notice
 
-This is an unofficial firmware reconstruction and modification, not an original Makerbase source release. The custom application is independently compilable but is not byte-identical to the factory HEX. The separate assembly reference in the main repository is used for exact reproduction of the original instructions. See [NOTICE.md](NOTICE.md). Redistribution rights for vendor-derived code and assets have not been established.
+This is an unofficial firmware reconstruction and modification, not an original Makerbase source release. The custom application is independently compilable but is not byte-identical to the factory HEX. The separate assembly reference in the main repository is used for exact reproduction of the original instructions. See [NOTICE.md](SERVO42C_Custom_R02_Source/NOTICE.md). Redistribution rights for vendor-derived code and assets have not been established.
