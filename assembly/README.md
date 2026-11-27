@@ -2,7 +2,7 @@
 
 This package reassembles the recovered ARM Thumb instructions and data at their original flash addresses. It is separate from the editable C implementation. It is not the original Makerbase compiler or source code.
 
-Requirements: Python 3.8+, Clang 17 with ARM support, LLD 17 and LLVM objcopy on PATH. The reference toolchain was tested on Linux; Windows compatibility is not established. No serial connection or programming takes place.
+Requirements: Python 3.8+, Clang 17 with ARM support, LLD 17 and LLVM objcopy on PATH. The reference toolchain was tested on Linux. No serial connection or programming takes place.
 
 ## Build the application reference
 
