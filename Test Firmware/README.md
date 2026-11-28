@@ -1,4 +1,4 @@
-# Firmware Releases
+# Test Firmware
 
 Published custom firmware revisions for the MKS SERVO42C, based on the V1.1.3 reconstruction for the HC32L130.
 

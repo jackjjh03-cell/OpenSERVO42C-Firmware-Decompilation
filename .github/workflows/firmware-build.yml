@@ -6,14 +6,14 @@ on:
       - 'development/**'
       - 'source/**'
       - 'assembly/**'
-      - 'Firmware Releases/**'
+      - 'Test Firmware/**'
       - '.github/workflows/firmware-build.yml'
   pull_request:
     paths:
       - 'development/**'
       - 'source/**'
       - 'assembly/**'
-      - 'Firmware Releases/**'
+      - 'Test Firmware/**'
       - '.github/workflows/firmware-build.yml'
   workflow_dispatch:
 
@@ -63,13 +63,13 @@ jobs:
 
       - name: Build Custom R02
         run: |
-          cd 'Firmware Releases/R02/SERVO42C_Custom_R02_Source'
+          cd 'Test Firmware/R02/SERVO42C_Custom_R02_Source'
           cmake -S . -B build/custom -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arm-clang.cmake
           cmake --build build/custom
 
       - name: Build Custom R02 profiling
         run: |
-          cd 'Firmware Releases/R02/SERVO42C_Custom_R02_Source'
+          cd 'Test Firmware/R02/SERVO42C_Custom_R02_Source'
           cmake -S . -B build/profile -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/arm-clang.cmake -DSYSINFO_PROFILE=ON
           cmake --build build/profile
 
@@ -82,10 +82,10 @@ jobs:
           mkdir -p artifacts/factory artifacts/R02 artifacts/R02-profile
           for file in servo42c.elf servo42c.map build_report.json; do
             cp "development/build/factory/$file" "artifacts/factory/$file"
-            cp "Firmware Releases/R02/SERVO42C_Custom_R02_Source/build/custom/$file" "artifacts/R02/$file"
-            cp "Firmware Releases/R02/SERVO42C_Custom_R02_Source/build/profile/$file" "artifacts/R02-profile/$file"
+            cp "Test Firmware/R02/SERVO42C_Custom_R02_Source/build/custom/$file" "artifacts/R02/$file"
+            cp "Test Firmware/R02/SERVO42C_Custom_R02_Source/build/profile/$file" "artifacts/R02-profile/$file"
           done
-          printf '%s\n' 'Application builds only; not complete flash images.' 'Preserve each board’s original identity, settings and calibration. See Firmware Releases/R02/SERVO42C_Custom_R02_Source/FLASHING.md.' > artifacts/README.txt
+          printf '%s\n' 'Application builds only; not complete flash images.' 'Preserve each board’s original identity, settings and calibration. See Test Firmware/R02/SERVO42C_Custom_R02_Source/FLASHING.md.' > artifacts/README.txt
           cd artifacts
           find factory R02 R02-profile -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
           sha256sum -c SHA256SUMS.txt

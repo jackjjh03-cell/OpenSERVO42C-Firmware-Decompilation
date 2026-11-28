@@ -14,13 +14,13 @@ Three versions are included: a VS Code development project, a bare C source tree
 
 ## Custom firmware R02
 
-[Browse firmware releases](Firmware%20Releases/) · [Changelog](CHANGELOG.md)
+[Browse test firmware](Test%20Firmware/) · [Changelog](CHANGELOG.md)
 
 The current custom firmware adds SysInfo, RPM telemetry, encoder-fault settings access and UART diagnostics.
 
-- [Custom R02 firmware](Firmware%20Releases/R02/README.md)
-- [SysInfo and UART diagnostic reference](Firmware%20Releases/R02/SERVO42C_Custom_R02_Source/docs/SYSINFO.md)
-- [PC configuration editor (Python)](Firmware%20Releases/R02/SERVO42C_Custom_R02_Source/tools/config_editor.py)
+- [Custom R02 firmware](Test%20Firmware/R02/README.md)
+- [SysInfo and UART diagnostic reference](Test%20Firmware/R02/SERVO42C_Custom_R02_Source/docs/SYSINFO.md)
+- [PC configuration editor (Python)](Test%20Firmware/R02/SERVO42C_Custom_R02_Source/tools/config_editor.py)
 
 ## Contents
 
@@ -84,7 +84,7 @@ OpenSERVO42C-Firmware-Decompilation/
 ├── README.md
 ├── .gitignore
 ├── NOTICE.md
-├── Firmware Releases/
+├── Test Firmware/
 │   ├── README.md
 │   └── R02/
 ├── development/
@@ -597,8 +597,8 @@ Changes that intentionally alter factory behavior should be maintained separatel
 
 Custom firmware based on the V1.1.3 reconstruction, featuring SysInfo diagnostics, live RPM monitoring, improved magnet error handling and extended UART functionality.
 
-- [Custom R02 Firmware Documentation](Firmware%20Releases/R02/SERVO42C_Custom_R02_Source/README.md)
-- [SysInfo Diagnostic and UART Reference](Firmware%20Releases/R02/SERVO42C_Custom_R02_Source/docs/SYSINFO.md)
+- [Custom R02 Firmware Documentation](Test%20Firmware/R02/SERVO42C_Custom_R02_Source/README.md)
+- [SysInfo Diagnostic and UART Reference](Test%20Firmware/R02/SERVO42C_Custom_R02_Source/docs/SYSINFO.md)
 
 
 The factory C source is the reference implementation. Start custom changes from a separate branch and keep the source-only distribution synchronized with the development tree. Useful entry points are `defaults.h` for fallback settings, `commands.c` and `uart.c` for the serial interface, `menu.c` for the display menu and `motion_controller.c` for the motor-control logic. Changes to saved settings, timing or control parameters require additional validation; a successful build is not enough to establish safe motor operation.

@@ -11,4 +11,4 @@
 - Added an optional motion interrupt profiling build.
 - Normal R02 has been flashed and booted on the original SERVO42C. Broader hardware and profiling validation remain outstanding.
 
-[Source and documentation](Firmware%20Releases/R02/)
+[Source and documentation](Test%20Firmware/R02/)
