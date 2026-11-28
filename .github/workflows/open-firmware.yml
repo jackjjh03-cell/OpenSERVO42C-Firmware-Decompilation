@@ -69,3 +69,25 @@ jobs:
           path: openservo-source.zip
           retention-days: 14
           if-no-files-found: error
+
+  studio-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: OpenSERVO42C
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+      - name: Install pinned Studio dependency
+        run: python -m pip install -r studio/requirements.txt
+      - name: Verify Windows imports
+        run: python -c "import tkinter, serial; from studio.app import Studio; print('Studio imports passed')"
+      - name: Test Studio transport, validation and connection handling
+        run: python -m unittest discover -s tests -p "test_studio*.py"
+      - name: Test Studio profiles and units
+        run: |
+          python -m unittest discover -s tests -p test_profiles.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tests -p test_units.py

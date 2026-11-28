@@ -22,7 +22,9 @@ An optional `--output path.hex` exports only file-backed application flash from 
 
 ## Studio
 
-From `OpenSERVO42C`, install the pinned serial dependency and start the GUI:
+On Windows, install Python with Tcl/Tk enabled, extract the entire development source archive and open the `OpenSERVO42C` folder. Run `setup_studio.cmd` once to install the pinned serial dependency, then double-click `start_studio.cmd` whenever needed. Setup installs into your Python user environment and does not change firmware. The launcher does not install packages, connect to a controller or send motor commands automatically.
+
+From `OpenSERVO42C`, the equivalent command-line procedure is:
 
 ```sh
 python -m pip install -r studio/requirements.txt
