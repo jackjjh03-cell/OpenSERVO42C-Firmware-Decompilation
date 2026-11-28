@@ -16,3 +16,5 @@ See [hardware evidence](docs/hardware.md), [protocol](docs/protocol.md), and [de
 The portable [motion and PID modules](docs/motion-and-pid.md) now provide trapezoidal and quintic S-curve position trajectories and a fixed-point position regulator. They are integrated with the portable controller and share configuration commands with the Python codec. Physical UART and motor output remain unimplemented.
 
 The [MT6816 encoder layer](docs/encoder.md) includes a checked SPI decoder, rollover tracker and a separate HC32 register transport awaiting hardware initialization and validation.
+
+[Memory and timing budgets](docs/memory-and-timing.md) · [First powered bench test](docs/bench-validation.md). The new Cortex-M0+ linker layout and synthetic link tests enforce the initial flash and static-RAM targets; the full hardware application has not yet been linked.

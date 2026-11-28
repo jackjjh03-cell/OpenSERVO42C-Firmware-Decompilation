@@ -17,3 +17,7 @@ jobs:
         run: cmake --build build/open
       - name: Test
         run: ctest --test-dir build/open --output-on-failure
+      - name: Install ARM-capable Clang and LLD
+        run: sudo apt-get update && sudo apt-get install -y clang lld
+      - name: Check Cortex-M0+ memory budgets
+        run: python3 OpenSERVO42C/tests/test_link_budget.py

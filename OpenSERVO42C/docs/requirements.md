@@ -15,4 +15,6 @@
 3. Current/position loop and encoder calibration, bounded bench tests; validated critical protection and fault output if stock board supports it.
 4. Studio transport, simulated controller and UI alongside hardware integration; tune and compare measured responses.
 5. Standalone trajectory planner, guided tuning, persistent configuration migration and recovery validation.
-No build is a hardware safety certification. Do not publish a programming image until hardware bring-up is reviewed.
+No build is a hardware safety certification. Development test images may be provided for staged bench validation after source-level review, backup and restore preparation, and initial output-inhibit checks. Do not label them as hardware-validated before testing.
+
+Use [memory and timing budgets](memory-and-timing.md) and the [bench procedure](bench-validation.md). Implement all supported functionality rather than leaving arbitrary feature locks; only hardware-dependent enable paths and features that cannot be validated on the stock board require restrictions.
