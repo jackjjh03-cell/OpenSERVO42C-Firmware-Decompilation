@@ -9,6 +9,7 @@ from . import protocol as p
 from .client import ControllerClient, MODE_NAMES
 from .tuning import analyze
 from .tuning_trials import PROFILES, rank_trials
+from .gain_search import suggest
 from .trial_capture import begin_trial, finish_trial
 from .sweep import Sweep
 from .lut_transfer import LutTransfer
@@ -146,6 +147,16 @@ class Studio:
         ttk.Button(trials,text="Clear trial comparisons",command=self.clear_trials).grid(row=7,column=1,sticky="w")
         self.trial_text = tk.StringVar(value="Arm position mode at a known starting point with travel limits and protect policy enabled. Record one test move, wait for the trace to finish, disable output, then retrieve. Return to the same start and repeat with other gains. Low effort is not a noise measurement.")
         ttk.Label(trials,textvariable=self.trial_text,justify="left",wraplength=850).grid(row=8,column=0,columnspan=3,sticky="w",pady=12)
+        search = ttk.Frame(tabs, padding=12); tabs.add(search,text="Gain search")
+        self.search_caps = self.field(search,0,"Upper Kp, Ki, Kd (Q12)","")
+        self.search_step = self.field(search,1,"Initial step (% of upper bounds)","10")
+        self.search_candidate = None; self.search_rejected = set()
+        self.search_text = tk.StringVar(value="Record a baseline in PID trials, then enter reviewed per-gain upper bounds separated by commas. Zero locks that gain at zero. The selected ranking objective is shared with PID trials.")
+        ttk.Button(search,text="Suggest next gains to PID editor",command=self.next_gains).grid(row=2,column=0,sticky="w",pady=6)
+        ttk.Button(search,text="Skip last candidate",command=self.skip_gains).grid(row=2,column=1,sticky="w")
+        ttk.Button(search,text="Copy best measured gains",command=self.copy_best_gains).grid(row=3,column=0,sticky="w")
+        ttk.Button(search,text="Reset skipped candidates",command=self.reset_search).grid(row=3,column=1,sticky="w")
+        ttk.Label(search,textvariable=self.search_text,justify="left",wraplength=850).grid(row=4,column=0,columnspan=3,sticky="w",pady=12)
         calibrate = ttk.Frame(tabs, padding=12); tabs.add(calibrate,text="Calibration")
         self.cal_active=False; self.cal_need_step=False; self.cal_sweep=None
         self.lut_active=False; self.lut_transfer=None
@@ -223,6 +234,7 @@ class Studio:
         self.cal_active=False;self.cal_need_step=False;self.cal_sweep=None
         self.lut_active=False;self.lut_transfer=None;self.lut_progress["value"]=0
         self.trial_text.set('No comparison trials for this connection.')
+        self.reset_search()
         self.message.set("Connected. No motor commands sent.")
 
     def disconnect(self):
@@ -430,7 +442,31 @@ class Studio:
 
     def clear_trials(self):
         if messagebox.askyesno("Clear comparisons","Clear recorded comparisons and the pending trial reference? This does not stop the motor or recording."):
-            self.trials.clear();self.trial_pending=None;self.show_trials()
+            self.trials.clear();self.trial_pending=None;self.show_trials();self.reset_search()
+
+    def reset_search(self):
+        self.search_candidate=None;self.search_rejected.clear()
+        self.search_text.set("Record comparable trials, enter reviewed gain bounds, then request the next candidate. No gains are applied automatically.")
+
+    def next_gains(self):
+        if self.trial_pending is not None:
+            self.message.set("Retrieve or clear the pending trial before requesting another candidate.");return
+        try:
+            caps=tuple(int(v.strip()) for v in self.search_caps.get().split(","))
+            proposal=suggest(self.trials,self.trial_profile.get(),caps,int(self.search_step.get()),self.search_rejected)
+        except ValueError as exc:
+            self.search_text.set(str(exc));return
+        self.search_candidate=proposal.candidate
+        if proposal.candidate is None:
+            self.search_text.set("No untested neighbors remain within the chosen bounds and integer resolution. Best measured Kp/Ki/Kd: {}. This is a local search result, not proof of stability.".format(proposal.best[:3]));return
+        self.fill(self.config_vars[1],proposal.candidate)
+        self.search_text.set("Best measured: {}\nNext candidate: {}\nSearch steps: {}\nSkipped: {}\nCandidate copied to PID editor only. Review and apply while disabled, return to the same starting point, then record and retrieve another trial. If the candidate fails, disable output and skip it before continuing.".format(proposal.best[:3],proposal.candidate[:3],proposal.steps,len(self.search_rejected)))
+
+    def skip_gains(self):
+        if self.search_candidate is None or self.search_candidate in {t.gains for t in self.trials}:
+            self.message.set("No unmeasured candidate to skip.");return
+        self.search_rejected.add(self.search_candidate);self.search_candidate=None
+        self.search_text.set("Candidate excluded from further suggestions. If a trial is pending, retrieve or clear it first. Skipping does not send motor commands.")
 
     def show_trace_status(self,data):
         count,requested,interval,flags=data
