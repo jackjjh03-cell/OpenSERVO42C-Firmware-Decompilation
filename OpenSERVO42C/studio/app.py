@@ -10,6 +10,7 @@ from .client import ControllerClient, MODE_NAMES
 from .tuning import analyze
 from .tuning_trials import PROFILES, rank_trials
 from .trial_capture import begin_trial, finish_trial
+from .sweep import Sweep
 
 GROUPS = (
     ("Protection", p.GET_CONFIG, p.SET_CONFIG, ("Following error (counts)", "Stall error (counts)", "Stall speed (counts/s)", "Stall load (permille)", "Fault dwell (ms)", "Clear dwell (ms)", "Policy (0 monitor, 1 warn, 2 protect)")),
@@ -144,6 +145,15 @@ class Studio:
         ttk.Button(trials,text="Clear trial comparisons",command=self.clear_trials).grid(row=7,column=1,sticky="w")
         self.trial_text = tk.StringVar(value="Arm position mode at a known starting point with travel limits and protect policy enabled. Record one test move, wait for the trace to finish, disable output, then retrieve. Return to the same start and repeat with other gains. Low effort is not a noise measurement.")
         ttk.Label(trials,textvariable=self.trial_text,justify="left",wraplength=850).grid(row=8,column=0,columnspan=3,sticky="w",pady=12)
+        calibrate = ttk.Frame(tabs, padding=12); tabs.add(calibrate,text="Calibration")
+        self.cal_active=False; self.cal_need_step=False; self.cal_sweep=None
+        self.cal_current=self.field(calibrate,0,"Calibration current (raw counts)","")
+        self.cal_hysteresis=self.field(calibrate,1,"Max raw-count disagreement", "16")
+        self.cal_text=tk.StringVar(value="Uncouple the motor from the mechanism. Configure and save drive settings, reboot, enable external EN, and keep motor output disabled. A calibration sweep invalidates the mechanical reference. No flash is written.")
+        ttk.Button(calibrate,text="Start two-direction sweep",command=self.start_calibration).grid(row=2,column=0,sticky="w",pady=6)
+        ttk.Button(calibrate,text="Stop calibration",command=self.stop_calibration).grid(row=2,column=1,sticky="w")
+        ttk.Button(calibrate,text="Export generated LUT",command=self.export_calibration).grid(row=3,column=0,sticky="w")
+        ttk.Label(calibrate,textvariable=self.cal_text,justify="left",wraplength=850).grid(row=4,column=0,columnspan=3,sticky="w",pady=12)
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(50, self.pump)
         self.next_poll = 0
@@ -175,6 +185,7 @@ class Studio:
         self.done, self.quiet = done, quiet
 
     def disable(self):
+        self.cal_active=False;self.cal_need_step=False
         self.submit(lambda c: c.write(p.DISABLE), urgent=True)
 
     def reset_captures(self, _):
@@ -203,10 +214,13 @@ class Studio:
     def on_connected(self, _):
         self.connected = True; self.snapshot = None; self.history.clear()
         self.trials.clear(); self.trial_pending = None
+        self.cal_active=False;self.cal_need_step=False;self.cal_sweep=None
         self.trial_text.set('No comparison trials for this connection.')
         self.message.set("Connected. No motor commands sent.")
 
     def disconnect(self):
+        if self.cal_active:
+            self.stop_calibration();self.message.set("Calibration stop requested; verify output before disconnecting.");return
         if not self.connected or self.future is not None:
             return
         if (not self.snapshot or self.snapshot[0]["state"] == 2) and not messagebox.askyesno("Disconnect", "Disconnecting does not stop the motor. Continue?"):
@@ -246,6 +260,10 @@ class Studio:
                 if done: done(value)
             except Exception as exc:
                 failed = True
+                if self.cal_active:
+                    self.cal_active=False;self.cal_need_step=False
+                    self.cal_text.set("Calibration interrupted: "+str(exc)+". Verify output independently.")
+                    self.pending=(lambda c:c.write(p.CAL_STOP),None,True)
                 self.message.set(str(exc)); self.snapshot = None
                 self.status_text.set("Controller state unknown — verify output independently.")
             if self.pending is not None:
@@ -261,7 +279,14 @@ class Studio:
                     self.worker.shutdown(wait=False); self.root.destroy(); return
         elif self.connected and self.future is None and time.monotonic() >= self.next_poll:
             self.next_poll = time.monotonic() + 0.25
-            self.submit(lambda c: (c.status(),c.run_status()), self.update_monitor, True)
+            if self.cal_active:
+                if self.cal_need_step:
+                    self.cal_need_step=False
+                    self.submit(lambda c:c.write(p.CAL_STEP),quiet=True)
+                else:
+                    self.submit(lambda c:c.read(p.CAL_STATUS),self.calibration_sample,True)
+            else:
+                self.submit(lambda c: (c.status(),c.run_status()), self.update_monitor, True)
         self.root.after(50, self.pump)
 
     def update_monitor(self, data):
@@ -273,6 +298,45 @@ class Studio:
         self.status_text.set("{} · {} · PWM {} · EN {} · Reference {}\nActual {:,}   Target {:,}   Speed {:,} counts/s   Load {:.1f}%\nFaults: {}   Pending: {}   Missed ticks: {}".format(state,mode,"on" if r["flags"]&1 else "off","on" if r["flags"]&2 else "off","valid" if r["flags"]&32 else "unconfirmed",s["actual"],s["target"],s["speed_counts_s"],s["load_permille"]/10,fault_names(s["faults"]),fault_names(r["pending_fault"]),r["missed_ticks"]))
         self.history.append((time.monotonic()-self.start,s["actual"],s["target"],s["speed_counts_s"],s["load_permille"]))
         self.draw_graph()
+
+    def start_calibration(self):
+        if not self.connected or self.cal_active or self.pending is not None or self.future is not None and not self.quiet:
+            self.message.set("Connect and wait for the current operation.");return
+        try:
+            current=int(self.cal_current.get()); sweep=Sweep(int(self.cal_hysteresis.get()))
+            if not 1<=current<=2047: raise ValueError("Enter a positive calibration current within the configured limit.")
+        except ValueError as exc:
+            self.message.set(str(exc));return
+        if not messagebox.askyesno("Calibration motion","Motor will move one full turn forward and back. Confirm motor is physically uncoupled, limits disabled, current is appropriate, and an independent hardware stop is available."):
+            return
+        self.cal_sweep=sweep
+        self.cal_active=True;self.cal_need_step=False
+        self.cal_text.set("Starting calibration. Verify the shaft is free to turn.")
+        self.submit(lambda c:c.write(p.CAL_START,current),quiet=False)
+
+    def calibration_sample(self,status):
+        if not self.cal_active: return
+        self.cal_need_step=self.cal_sweep.accept(status)
+        if self.cal_sweep.lut is not None:
+            self.cal_active=False
+            self.cal_text.set("Sweep complete; output disabled. Maximum disagreement: {} raw counts. Export the generated LUT. Board flash has not been changed.".format(self.cal_sweep.peak))
+        else:
+            self.cal_text.set("Collecting calibration knot {} / 400. Motor energized; use independent hardware stop if necessary.".format(status[0]))
+
+    def stop_calibration(self):
+        self.cal_active=False;self.cal_need_step=False
+        self.submit(lambda c:c.write(p.CAL_STOP),urgent=True)
+        self.cal_text.set("Stop requested. Confirm output is disabled before handling the motor.")
+
+    def export_calibration(self):
+        if self.cal_sweep is None or self.cal_sweep.lut is None:
+            self.message.set("Complete a valid sweep first.");return
+        path=filedialog.asksaveasfilename(defaultextension=".bin",filetypes=[("Raw LUT binary","*.bin")])
+        if path:
+            try:
+                with open(path,"wb") as f:f.write(self.cal_sweep.lut)
+            except OSError as exc:self.message.set(str(exc));return
+            self.message.set("Calibration LUT exported. Not programmed to the controller.")
 
     def show_calibration(self, data):
         winding, jump, forward, reverse, flat, flags = data
@@ -383,6 +447,7 @@ class Studio:
     def close(self):
         if self.connected and not messagebox.askyesno("Exit", "Exiting does not stop the motor. Continue?"):
             return
+        if self.cal_active:self.stop_calibration()
         self.closing = True
 
 

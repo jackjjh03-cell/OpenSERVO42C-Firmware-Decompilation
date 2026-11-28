@@ -14,6 +14,7 @@
 #include "calibration_check.h"
 #include "trace.h"
 #include "oled.h"
+#include "calibration_sweep.h"
 #ifndef OS_MOTOR_RUNTIME
 #define OS_MOTOR_RUNTIME 0
 #endif
@@ -51,6 +52,7 @@ static void read_encoder(void){
 #if OS_MOTOR_RUNTIME
 static uint32_t position_adc;
 static os_trace trace;
+static os_cal_sweep sweep;
 static os_timing_stat timing[3]; /* current, position, foreground commands */
 static uint32_t timing_start(void){(void)REG(0xe000e010u);return REG(0xe000e018u);}
 static bool timing_end(unsigned index,uint32_t start){
@@ -111,7 +113,8 @@ void current_irq(void){
     service_enable_edge();
     read_encoder();
     service_enable_edge();
-    os_run_adc(&run,&io,input_enabled(),(bench.flags&1u)!=0u,bench.cal_angle,adc_valid,
+    if(sweep.flags&OS_CAL_ACTIVE)os_cal_adc(&sweep,&run,&io,input_enabled(),(bench.flags&2u)!=0u,adc_valid,(uint16_t)sample.scale,(uint16_t)sample.slot2,(uint16_t)sample.slot1);
+    else os_run_adc(&run,&io,input_enabled(),(bench.flags&1u)!=0u,bench.cal_angle,adc_valid,
                (uint16_t)sample.scale,(uint16_t)sample.slot2,(uint16_t)sample.slot1);
     /* If another conversion has already completed, the current loop has no
      * execution margin. Never continue driving with a known backlog. */
@@ -130,7 +133,8 @@ void systick_irq(void){
     bench.scale=(uint16_t)sample.scale;bench.slot1=(uint16_t)sample.slot1;bench.slot2=(uint16_t)sample.slot2;
     bench.pulse=(uint16_t)REG(0x40003000u);bench.uart_dropped=uart.dropped;
     bench.flags=(uint8_t)((bench.flags&3u)|((REG(0x40020d44u)&128u)?4u:0u)|(fresh&&adc_valid?8u:0u));
-    os_run_tick(&run,&io,ticks,bench.cal_angle,fresh&&(bench.flags&1u)!=0u,bench.pulse,input_enabled(),false,false);
+    if(sweep.flags&OS_CAL_ACTIVE)os_cal_tick(&sweep,&run,&io,ticks,fresh,(bench.flags&2u)!=0u,bench.raw_angle);
+    else os_run_tick(&run,&io,ticks,bench.cal_angle,fresh&&(bench.flags&1u)!=0u,bench.pulse,input_enabled(),false,false);
     bench.missed_ticks=run.missed_ticks;
     os_trace_tick(&trace,&run.drive.control,ticks);
     os_hc32_indicator(run.drive.control.state==OS_FAULT);
@@ -232,7 +236,15 @@ void os_target_main(void){
             if(status==OS_BOARD_OK){service_enable_edge();os_run_enable(&run,&io,input_enabled());}
 #endif
 #if OS_MOTOR_RUNTIME
-            if(in[4]>=OS_TRACE_START&&in[4]<=OS_TRACE_READ)len=os_trace_dispatch(&trace,in,n,out);
+            if(in[4]>=OS_CAL_START&&in[4]<=OS_CAL_STOP)len=os_cal_dispatch(&sweep,&run,&io,ticks,(bench.flags&2u)!=0u,bench.raw_angle,in,n,out);
+            else if((sweep.flags&OS_CAL_ACTIVE)&&in[4]!=OS_GET_BENCH){
+                if(os_frame_valid(in,n)){
+                    if(in[4]==OS_DISABLE&&!in[5]){os_cal_stop(&sweep,&run,&io,false);out[6]=OS_OK;}
+                    else out[6]=OS_REJECTED;
+                    len=os_frame_reply(in,out,1);
+                }else len=0;
+            }
+            else if(in[4]>=OS_TRACE_START&&in[4]<=OS_TRACE_READ)len=os_trace_dispatch(&trace,in,n,out);
             else if(in[4]==30u)len=timing_reply(in,n,out);
             else
 #endif
@@ -260,7 +272,7 @@ void os_target_main(void){
             if(!page){
                 m=lock();const os_controller *c=&run.drive.control;
                 view=(os_oled_view){c->latest.actual,c->faults,adc_errors,bench.encoder_errors,c->latest.load_permille,bench.raw_angle,
-                    (uint8_t)c->state,(uint8_t)c->mode,(uint8_t)status,(uint8_t)((run.reference_confirmed?1u:0u)|(run.gate.enabled?2u:0u)|(run.enable?4u:0u))};
+                    (uint8_t)(run.gate.enabled?OS_ACTIVE:c->state),(uint8_t)c->mode,(uint8_t)status,(uint8_t)((run.reference_confirmed?1u:0u)|(run.gate.enabled?2u:0u)|(run.enable?4u:0u))};
                 unlock(m);
             }
             uint8_t pixels[72];os_oled_render(&view,buttons.diagnostics,page,pixels);

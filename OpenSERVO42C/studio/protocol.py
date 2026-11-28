@@ -91,3 +91,8 @@ TRACE_START_DATA = struct.Struct("<HH")
 TRACE_STATUS_DATA = struct.Struct("<HHHB")
 TRACE_READ_DATA = struct.Struct("<HB")
 TRACE_SAMPLE = struct.Struct("<IiihH")
+
+CAL_START, CAL_STEP, CAL_STATUS, CAL_STOP = range(40, 44)
+CAL_START_DATA = struct.Struct("<H")
+CAL_STATUS_DATA = struct.Struct("<HHB") # index, settled raw angle, flags
+CAL_ACTIVE, CAL_READY, CAL_DONE, CAL_ABORTED = 1, 2, 4, 8

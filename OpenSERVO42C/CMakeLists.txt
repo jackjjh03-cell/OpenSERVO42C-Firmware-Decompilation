@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(OpenSERVO42C_core C)
 enable_testing()
-add_library(openservo STATIC firmware/core/controller.c firmware/communication/protocol.c firmware/motion/motion.c firmware/core/pid.c firmware/hal/encoder.c firmware/hal/current.c firmware/hal/phase.c firmware/communication/stream.c firmware/core/drive.c firmware/hal/board.c firmware/communication/uart_transport.c firmware/hal/feedback_dma.c firmware/communication/bringup.c firmware/hal/output_gate.c firmware/core/run.c firmware/communication/run_protocol.c firmware/core/settings.c firmware/hal/settings_flash.c firmware/core/settings_session.c firmware/hal/calibration_check.c firmware/core/trace.c firmware/hal/oled.c)
+add_library(openservo STATIC firmware/core/controller.c firmware/communication/protocol.c firmware/motion/motion.c firmware/core/pid.c firmware/hal/encoder.c firmware/hal/current.c firmware/hal/phase.c firmware/communication/stream.c firmware/core/drive.c firmware/hal/board.c firmware/communication/uart_transport.c firmware/hal/feedback_dma.c firmware/communication/bringup.c firmware/hal/output_gate.c firmware/core/run.c firmware/communication/run_protocol.c firmware/core/settings.c firmware/hal/settings_flash.c firmware/core/settings_session.c firmware/hal/calibration_check.c firmware/core/trace.c firmware/hal/oled.c firmware/core/calibration_sweep.c)
 target_include_directories(openservo PUBLIC firmware/include)
 target_compile_features(openservo PUBLIC c_std_11)
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
@@ -106,3 +106,9 @@ add_test(NAME oled COMMAND oled_tests)
 
 add_test(NAME studio_calibration COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_calibration.py)
 set_tests_properties(studio_calibration PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_executable(calibration_sweep_tests tests/calibration_sweep_tests.c)
+target_link_libraries(calibration_sweep_tests PRIVATE openservo)
+add_test(NAME calibration_sweep COMMAND calibration_sweep_tests)
+add_test(NAME studio_sweep COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_sweep.py)
+set_tests_properties(studio_sweep PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
