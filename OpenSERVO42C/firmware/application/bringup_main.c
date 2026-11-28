@@ -7,10 +7,16 @@
 #include "feedback_dma.h"
 #include "hc32_inhibit.h"
 #include "uart_transport.h"
+#include "settings_session.h"
+#include "settings_flash.h"
+#include "run_protocol.h"
 #define REG(a) (*(volatile uint32_t *)(uintptr_t)(a))
 static os_board_io io;
 static os_uart uart;
-static os_controller controller;
+static os_run run;
+static os_settings_session session;
+static os_flash flash;
+static os_settings_io store;
 static volatile os_adc_words dma_words;
 static volatile os_adc_words sample;
 static volatile uint32_t adc_samples,adc_errors,ticks;
@@ -50,7 +56,7 @@ void os_target_panic(void){
     for(;;)__asm volatile("wfi");
 }
 void os_target_main(void){
-    io=os_hc32_board_io();os_init(&controller);
+    io=os_hc32_board_io();os_init(&run.drive.control);
     os_offsets offsets;os_board_result status=os_board_prepare(&io,&offsets);
     bench.board_status=(uint8_t)status;
     if(status==OS_BOARD_CLOCK)os_target_panic();
@@ -61,6 +67,10 @@ void os_target_main(void){
     os_encoder_bus encoder=os_hc32_encoder_bus();
     if(status==OS_BOARD_OK){
         bench.offset1=offsets.slot1;bench.offset2=offsets.slot2;
+        flash=os_hc32_settings_flash();store=os_flash_settings_io(&flash);
+        const os_controller *c=&run.drive.control;
+        const os_settings fallback={c->cfg,c->pid_cfg,c->motion_cfg,c->limits,{16,1000,500,2048,300,25,false,600},0};
+        if(!os_settings_boot(&session,&run,&io,&store,&fallback,&offsets,false))os_target_panic();
         os_board_step_init(&io,false);REG(0x40003050u)|=1u; /* counter only */
         irq_enable(4,0);os_feedback_dma_start(&io,(uint32_t)(uintptr_t)&dma_words);
     }
@@ -85,12 +95,18 @@ void os_target_main(void){
                 }else if(bench.encoder_errors!=UINT32_MAX)bench.encoder_errors++;
                 bench.pulse=(uint16_t)REG(0x40003000u);
                 if(REG(0x40020d44u)&128u)bench.flags|=4u;
+                bool en=((bench.flags&4u)!=0u)==(session.enable_high!=0u);
+                if(bench.flags&8u)os_run_adc(&run,&io,en,(bench.flags&1u)!=0u,bench.cal_angle,true,bench.scale,bench.slot2,bench.slot1);
+                os_run_tick(&run,&io,now,bench.cal_angle,(bench.flags&1u)!=0u,bench.pulse,en,false,false);
             }
-            /* Status is deliberately OFF; diagnostics carry actual acquisition validity. */
+            /* Motor authorization remains false in this acquisition application. */
             os_hc32_indicator(status!=OS_BOARD_OK || (bench.flags&11u)!=11u);
         }else unlock(m);
         m=lock();size_t n=os_uart_take(&uart,in);unlock(m);
-        if(n){size_t len=os_bench_dispatch(&controller,&bench,in,n,out);
+        if(n){size_t len;
+            if(status==OS_BOARD_OK && (in[4]==OS_GET_STORAGE||in[4]==OS_SAVE_SETTINGS))len=os_storage_dispatch(&session,&run,&store,false,in,n,out);
+            else if(status==OS_BOARD_OK&&in[4]!=OS_GET_BENCH)len=os_run_dispatch(&run,&io,in,n,out);
+            else len=os_bench_dispatch(&run.drive.control,&bench,in,n,out);
             if(len){m=lock();(void)os_uart_send(&uart,&io,out,len);unlock(m);}}
         /* The regular SysTick also wakes an interrupt arriving before WFI. */
         __asm volatile("wfi");
