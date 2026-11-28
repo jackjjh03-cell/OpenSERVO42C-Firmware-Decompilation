@@ -40,6 +40,10 @@ b .
         result = self.link()
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_empty_initialized_data(self):
+        result = self.link(data=0)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_flash(self):
         result = self.link(text=0x7600)
         self.assertNotEqual(result.returncode, 0)

@@ -62,6 +62,12 @@ bool os_run_confirm_reference(os_run *r,int32_t position){
        !os_drive_confirm_reference(&r->drive,position,r->drive.encoder.previous,r->drive.previous_pulse))return false;
     r->reference_confirmed=true;return true;
 }
+__attribute__((noinline)) bool os_run_select_mode(os_run *r,os_mode mode){
+    return !r->teaching&&!r->enable&&!r->gate.enabled&&os_select_mode(&r->drive.control,mode);
+}
+__attribute__((noinline)) bool os_run_ack(os_run *r){
+    return !r->enable&&!r->gate.enabled&&r->adc_good&&!r->drive.pending_fault&&os_acknowledge(&r->drive.control);
+}
 bool os_run_arm(os_run *r,const os_board_io *io){
     if(r->teaching||!r->enable||!r->tick_seen||!r->adc_seen||!r->adc_good||r->gate.enabled||!os_drive_arm(&r->drive))return false;
     if(!os_gate_open(&r->gate,io,true)){trip(r,io,OS_F_ELECTRICAL);os_drive_disable(&r->drive);return false;}

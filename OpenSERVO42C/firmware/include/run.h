@@ -16,6 +16,8 @@ typedef struct {
 bool os_run_init(os_run *r,const os_board_io *io,const os_drive_config *cfg,const os_offsets *offsets);
 void os_run_tick(os_run *r,const os_board_io *io,uint32_t now,uint16_t angle,bool valid,uint16_t pulse,bool enable,bool reference,bool travel);
 void os_run_adc(os_run *r,const os_board_io *io,bool enable,bool angle_valid,uint16_t angle,bool valid,uint16_t scale,uint16_t slot2,uint16_t slot1);
+bool os_run_select_mode(os_run *r,os_mode mode);
+bool os_run_ack(os_run *r);
 bool os_run_arm(os_run *r,const os_board_io *io);
 bool os_run_confirm_reference(os_run *r,int32_t position);
 void os_run_disable(os_run *r,const os_board_io *io);

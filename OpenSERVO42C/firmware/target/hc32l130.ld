@@ -13,8 +13,6 @@ __stack_floor = __stack_top - 0x800;
 SECTIONS {
   .vectors ORIGIN(FLASH) : { KEEP(*(.vectors .isr_vector)) } > FLASH
   .text : { *(.text .text.*) *(.rodata .rodata.*) } > FLASH
-  .ARM.extab : { *(.ARM.extab*) } > FLASH
-  .ARM.exidx : { *(.ARM.exidx*) } > FLASH
   .data : ALIGN(8) {
     __data_start = .; *(.data .data.*) . = ALIGN(8); __data_end = .;
   } > RAM AT> FLASH
@@ -24,9 +22,11 @@ SECTIONS {
   } > RAM
   .noinit (NOLOAD) : ALIGN(8) { *(.noinit .noinit.*) . = ALIGN(8); __static_end = .; } > RAM
   .stack __stack_floor (NOLOAD) : { . = . + 0x800; } > RAM
-  __app_flash_end = MAX(ADDR(.ARM.exidx)+SIZEOF(.ARM.exidx), LOADADDR(.data)+SIZEOF(.data));
+  __app_flash_end = MAX(ADDR(.text)+SIZEOF(.text), LOADADDR(.data)+SIZEOF(.data));
   __static_bytes = __static_end - ORIGIN(RAM);
-  /DISCARD/ : { *(.comment) *(.note*) }
+  /* Freestanding C/assembly, no exception unwinding. Keep real payload
+   * checks independent of ARM unwind table generation/merging. */
+  /DISCARD/ : { *(.comment) *(.note*) *(.ARM.extab*) *(.ARM.exidx*) }
   ASSERT(SIZEOF(.vectors) == 192, "Expected 48 vector entries")
   __flash_review_required = (__app_flash_end > __flash_target);
   ASSERT(__app_flash_end <= ORIGIN(FLASH)+LENGTH(FLASH), "Application overlaps reserved flash")

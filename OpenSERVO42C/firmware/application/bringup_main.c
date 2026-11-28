@@ -296,15 +296,25 @@ void os_target_main(void){
         if(oled&&(uint32_t)(now_display-display_tick)>=40u){
             display_tick=now_display;
             uint8_t pressed=(uint8_t)(((REG(0x40020d04u)&512u)?0u:1u)|((REG(0x40020d04u)&1024u)?0u:2u)|((REG(0x40020d44u)&16u)?0u:4u));
-            bool old=buttons.diagnostics;os_oled_button_sample(&buttons,pressed);
-            if(old!=buttons.diagnostics)page=0;
+            uint8_t old=buttons.screen,action=os_oled_button_sample(&buttons,pressed);
+            if(old!=buttons.screen||action)page=0;
+#if OS_MOTOR_RUNTIME
+            if(action&&status==OS_BOARD_OK&&!(sweep.flags&OS_CAL_ACTIVE)&&!upload.active){
+                m=lock();service_enable_edge();os_run_enable(&run,&io,input_enabled());
+                if(action==OS_OLED_MODE)(void)os_run_select_mode(&run,run.drive.control.mode==OS_OPEN_LOOP?OS_CNC:(os_mode)(run.drive.control.mode+1));
+                else (void)os_run_ack(&run);
+                unlock(m);
+            }
+#else
+            if(buttons.screen==OS_OLED_SETUP)buttons.screen=OS_OLED_STATUS;
+#endif
             if(!page){
                 m=lock();const os_controller *c=&run.drive.control;
                 view=(os_oled_view){c->latest.actual,c->faults,adc_errors,bench.encoder_errors,c->latest.load_permille,bench.raw_angle,
                     (uint8_t)(run.gate.enabled?OS_ACTIVE:c->state),(uint8_t)c->mode,(uint8_t)status,(uint8_t)((run.reference_confirmed?1u:0u)|(run.gate.enabled?2u:0u)|(run.enable?4u:0u))};
                 unlock(m);
             }
-            uint8_t pixels[72];os_oled_render(&view,buttons.diagnostics,page,pixels);
+            uint8_t pixels[72];os_oled_render(&view,buttons.screen,page,pixels);
             oled=os_oled_page(&io,page,pixels);page=(page+1u)%5u;
         }
         /* The regular SysTick also wakes an interrupt arriving before WFI. */

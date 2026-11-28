@@ -115,6 +115,18 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     tick(&r,&io,100,true);assert(r.drive.control.state==OS_OFF);
     tick(&r,&io,101,true);assert(!r.gate.enabled);
     assert(os_run_arm(&r,&io));
+    /* The OLED and serial commands share these exact admission checks. */
+    assert(!os_run_select_mode(&r,OS_VELOCITY)&&!os_run_ack(&r));
+    os_run_disable(&r,&io);tick(&r,&io,102,false);
+    assert(os_run_select_mode(&r,OS_VELOCITY));
+    assert(!os_run_select_mode(&r,(os_mode)6));
+    r.teaching=true;assert(!os_run_select_mode(&r,OS_POSITION));r.teaching=false;
+    r.drive.control.state=OS_FAULT;r.drive.control.faults=OS_F_ENCODER;
+    r.drive.control.position_lost=true;r.drive.control.healthy_ms=r.drive.control.cfg.clear_ms;
+    r.drive.control.observed=0;r.drive.control.latest.enable_input=false;
+    r.adc_good=false;assert(!os_run_ack(&r));r.adc_good=true;
+    r.drive.pending_fault=OS_F_TIMING;assert(!os_run_ack(&r));r.drive.pending_fault=0;
+    assert(os_run_ack(&r)&&r.drive.control.position_lost);closed(&r,&m);
     os_timing_stat stats={0};
     assert(!os_timing_record(&stats,48000,2000,1000,false)&&stats.peak==1000);
     assert(!os_timing_record(&stats,48000,100,47900,true)&&stats.peak==1000);

@@ -35,10 +35,22 @@ int main(void){fake f={0};os_board_io io={&f,read,write,0,delay};
     for(unsigned i=66;i<72;i++)assert(pixels[i]==0);
     os_oled_render(&v,true,2,pixels);assert(pixels[66]!=0||pixels[67]!=0);
     os_oled_render(&v,false,9,pixels);for(unsigned i=0;i<72;i++)assert(!pixels[i]);
-    os_oled_buttons b={0};os_oled_button_sample(&b,4);assert(!b.diagnostics);
-    os_oled_button_sample(&b,0);os_oled_button_sample(&b,4);assert(!b.diagnostics);
-    os_oled_button_sample(&b,4);assert(b.diagnostics);os_oled_button_sample(&b,4);assert(b.diagnostics);
-    os_oled_button_sample(&b,0);os_oled_button_sample(&b,0);os_oled_button_sample(&b,1);os_oled_button_sample(&b,1);assert(!b.diagnostics);
-    os_oled_button_sample(&b,3);os_oled_button_sample(&b,0);assert(!b.diagnostics);
+    os_oled_buttons b={0};assert(!os_oled_button_sample(&b,4)&&b.screen==OS_OLED_STATUS);
+    os_oled_button_sample(&b,0);os_oled_button_sample(&b,4);assert(b.screen==OS_OLED_STATUS);
+    os_oled_button_sample(&b,4);assert(b.screen==OS_OLED_DIAG);
+    os_oled_button_sample(&b,4);assert(b.screen==OS_OLED_DIAG);
+    os_oled_button_sample(&b,0);os_oled_button_sample(&b,0);
+    os_oled_button_sample(&b,4);os_oled_button_sample(&b,4);assert(b.screen==OS_OLED_SETUP);
+    os_oled_button_sample(&b,1);assert(!os_oled_button_sample(&b,1)); /* no release */
+    os_oled_button_sample(&b,0);os_oled_button_sample(&b,0);
+    assert(!os_oled_button_sample(&b,1));assert(os_oled_button_sample(&b,1)==OS_OLED_MODE);
+    assert(!os_oled_button_sample(&b,1));
+    os_oled_button_sample(&b,0);os_oled_button_sample(&b,0);
+    os_oled_button_sample(&b,2);assert(os_oled_button_sample(&b,2)==OS_OLED_ACK);
+    os_oled_button_sample(&b,0);os_oled_button_sample(&b,0);
+    os_oled_button_sample(&b,3);assert(!os_oled_button_sample(&b,3));
+    os_oled_button_sample(&b,0);os_oled_button_sample(&b,0);
+    os_oled_button_sample(&b,4);os_oled_button_sample(&b,4);assert(b.screen==OS_OLED_STATUS);
+    os_oled_render(&v,OS_OLED_SETUP,0,pixels);assert(pixels[0]);
     puts("OLED tests passed");return 0;
 }

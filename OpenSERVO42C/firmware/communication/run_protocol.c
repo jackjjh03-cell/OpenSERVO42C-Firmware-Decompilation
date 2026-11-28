@@ -14,11 +14,11 @@ size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t 
         break;
     case OS_ACK:
         if(in[5])p[0]=OS_BAD_LENGTH;
-        else if(r->enable||!r->adc_good||r->drive.pending_fault||!os_acknowledge(c))p[0]=OS_REJECTED;
+        else if(!os_run_ack(r))p[0]=OS_REJECTED;
         break;
     case OS_SELECT_MODE:
         if(in[5]!=1u)p[0]=OS_BAD_LENGTH;
-        else if(r->teaching||r->enable||r->gate.enabled||in[6]>OS_OPEN_LOOP||!os_select_mode(c,(os_mode)in[6]))p[0]=OS_REJECTED;
+        else if(!os_run_select_mode(r,(os_mode)in[6]))p[0]=OS_REJECTED;
         break;
     case OS_MOVE_ABS:
         if(in[5]!=4u)p[0]=OS_BAD_LENGTH;

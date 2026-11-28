@@ -67,9 +67,9 @@ static void number(uint8_t *p,const char *label,uint32_t n,bool negative){
     if(negative)s[--i]='-';
     unsigned x=text(p,0,label);text(p,x,s+i);
 }
-__attribute__((noinline)) void os_oled_render(const os_oled_view *v,bool diagnostics,unsigned page,uint8_t pixels[72]){
+__attribute__((noinline)) void os_oled_render(const os_oled_view *v,uint8_t screen,unsigned page,uint8_t pixels[72]){
     for(unsigned i=0;i<72u;i++)pixels[i]=0;
-    if(diagnostics){
+    if(screen==OS_OLED_DIAG){
         switch(page){
         case 0:text(pixels,0,"DIAGNOSTICS");break;
         case 1:number(pixels,"RAW ",v->raw_angle,false);break;
@@ -80,6 +80,15 @@ __attribute__((noinline)) void os_oled_render(const os_oled_view *v,bool diagnos
     }
     static const char *const states[]={"OFF","READY","ACTIVE","FAULT"};
     static const char *const modes[]={"CNC","POSITION","VELOCITY","JOG","TORQUE","OPEN LOOP"};
+    if(screen==OS_OLED_SETUP){
+        switch(page){
+        case 0:text(pixels,0,"SETUP");break;
+        case 1:text(pixels,0,v->mode<6u?modes[v->mode]:"UNKNOWN");break;
+        case 2:text(pixels,0,(v->flags&6u)?"DISABLE EN":"NEXT MODE");break;
+        case 3:text(pixels,0,v->faults?"ENTER ACK":"NO FAULT");break;
+        case 4:text(pixels,0,"MENU EXIT");break;
+        }return;
+    }
     switch(page){
     case 0:text(pixels,0,v->board_status?"BOARD ERROR":v->state==2u&&!(v->flags&2u)?"INHIBITED":v->state<4u?states[v->state]:"UNKNOWN");break;
     case 1:text(pixels,0,v->mode<6u?modes[v->mode]:"UNKNOWN");break;
@@ -88,13 +97,19 @@ __attribute__((noinline)) void os_oled_render(const os_oled_view *v,bool diagnos
     case 4:if(v->faults)number(pixels,"FAULT ",v->faults,false);else text(pixels,0,(v->flags&1u)?"REF OK":"NO REF");break;
     }
 }
-void os_oled_button_sample(os_oled_buttons *b,uint8_t pressed){
+uint8_t os_oled_button_sample(os_oled_buttons *b,uint8_t pressed){
     pressed&=7u;
+    uint8_t action=OS_OLED_NONE;
     if(pressed==b->previous&&pressed!=b->stable){
-        uint8_t edge=(uint8_t)(pressed&~b->stable);b->stable=pressed;
-        if(edge==1u)b->diagnostics=false;
-        else if(edge==2u)b->diagnostics=true;
-        else if(edge==4u)b->diagnostics=!b->diagnostics;
+        uint8_t old=b->stable;b->stable=pressed;
+        /* Require a full release before each single-key action. */
+        if(!old){
+            if(pressed==4u)b->screen=b->screen==OS_OLED_SETUP?OS_OLED_STATUS:(uint8_t)(b->screen+1u);
+            else if(b->screen==OS_OLED_SETUP){
+                if(pressed==1u)action=OS_OLED_MODE;
+                else if(pressed==2u)action=OS_OLED_ACK;
+            }
+        }
     }
-    b->previous=pressed;
+    b->previous=pressed;return action;
 }
