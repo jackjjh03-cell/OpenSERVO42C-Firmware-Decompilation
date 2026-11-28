@@ -1,4 +1,4 @@
-#include "run.h"
+#include "run_protocol.h"
 #include <assert.h>
 #include <stdio.h>
 static const os_drive_config cfg={16,1000,500,2048,300,25,false,600};
@@ -16,6 +16,13 @@ static void start(os_run *r,const os_board_io *io,uint32_t base){
     assert(os_run_arm(r,io)&&r->gate.enabled);
 }
 static void closed(os_run *r,mock *m){assert(!r->gate.enabled&&!(m->v[0]&0x1000u)&&!(m->v[1]&0x1000u));for(unsigned i=2;i<6;i++)assert((m->v[i]&65535u)==1200);}
+static uint8_t command(os_run *r,const os_board_io *io,uint8_t op,const uint8_t *payload,uint8_t size){
+    uint8_t in[OS_FRAME_MAX]={0xa5,0x5a,1,23,op,size},out[OS_FRAME_MAX];
+    for(unsigned i=0;i<size;i++)in[6+i]=payload[i];
+    uint16_t crc=os_crc16(in+2,4u+size);in[6u+size]=(uint8_t)crc;in[7u+size]=(uint8_t)(crc>>8);
+    assert(os_run_dispatch(r,io,in,8u+size,out)>=9u&&out[3]==23&&out[4]==(uint8_t)(op|0x80u));
+    return out[6];
+}
 int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     start(&r,&io,0);os_run_tick(&r,&io,100,0,true,0,true,false,false);closed(&r,&m);assert(r.drive.control.faults&OS_F_TIMING);
     start(&r,&io,0);tick(&r,&io,102,true);closed(&r,&m);assert(r.missed_ticks==2&&r.drive.control.faults&OS_F_TIMING);
@@ -25,5 +32,15 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     start(&r,&io,0);os_run_adc(&r,&io,true,false,0,true,2000,2048,2048);closed(&r,&m);tick(&r,&io,100,true);assert(r.drive.control.faults&OS_F_ENCODER);
     start(&r,&io,0);os_run_disable(&r,&io);closed(&r,&m);assert(r.drive.control.state==OS_OFF);
     assert(os_run_init(&r,&io,&cfg,&offsets));for(unsigned i=0;i<200;i++)os_run_tick(&r,&io,i,0,true,0,true,false,false);assert(!os_run_arm(&r,&io));closed(&r,&m);
+    assert(os_run_init(&r,&io,&cfg,&offsets));
+    uint8_t position=OS_POSITION,move[]={40,0,0,0};
+    assert(command(&r,&io,OS_ARM,0,0)==OS_REJECTED);
+    assert(command(&r,&io,OS_SELECT_MODE,&position,1)==OS_OK);
+    for(unsigned i=0;i<100;i++){adc(&r,&io,true);os_run_tick(&r,&io,i,0,true,0,true,true,false);}
+    assert(command(&r,&io,OS_ARM,0,0)==OS_OK&&r.gate.enabled);
+    assert(command(&r,&io,OS_MOVE_ABS,move,4)==OS_OK&&r.drive.control.moving);
+    assert(command(&r,&io,OS_SELECT_MODE,&position,1)==OS_REJECTED);
+    assert(command(&r,&io,OS_DISABLE,0,0)==OS_OK);closed(&r,&m);assert(!r.drive.control.moving);
+    assert(command(&r,&io,OS_GET_RUN,0,0)==OS_OK);
     puts("scheduler tests passed");return 0;
 }

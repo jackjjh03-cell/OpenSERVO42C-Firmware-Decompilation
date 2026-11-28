@@ -51,3 +51,8 @@ def response(packet, sequence, opcode):
     if payload[0] != 0:
         raise ValueError("controller rejected request: {}".format(payload[0]))
     return payload[1:]
+
+ARM, SELECT_MODE, MOVE_ABS, GET_RUN = range(13, 17)
+RUN_DATA = struct.Struct("<BBIII")
+MODE_DATA = struct.Struct("<B")
+POSITION_DATA = struct.Struct("<i")
