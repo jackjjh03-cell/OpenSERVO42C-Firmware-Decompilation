@@ -82,3 +82,6 @@ SET_TORQUE, GET_TORQUE = range(33, 35)
 TORQUE_COMMAND = struct.Struct("<iH") # signed raw ADC current counts, lease ms
 TORQUE_DATA = struct.Struct("<iiHB") # requested, applied demand, lease, cutoff flags
 TORQUE_TIMEOUT, TORQUE_SPEED, TORQUE_LIMIT = 1, 2, 4
+
+GET_CALIBRATION = 35
+CALIBRATION_DATA = struct.Struct("<i4HB") # winding, maximum jump, forward, reverse, flat, flags

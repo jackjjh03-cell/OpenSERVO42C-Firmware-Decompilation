@@ -11,6 +11,7 @@
 #include "settings_flash.h"
 #include "run_protocol.h"
 #include "timing.h"
+#include "calibration_check.h"
 #ifndef OS_MOTOR_RUNTIME
 #define OS_MOTOR_RUNTIME 0
 #endif
@@ -26,13 +27,23 @@ static volatile os_adc_words sample;
 static volatile uint32_t adc_samples,adc_errors,ticks;
 static volatile bool adc_valid,board_ready;
 static os_bench bench;
+static os_calibration_check calibration;
+static size_t calibration_reply(const uint8_t *in,size_t n,uint8_t *out){
+    if(!os_frame_valid(in,n))return 0;
+    out[6]=OS_OK;
+    if(in[5]){out[6]=OS_BAD_LENGTH;return os_frame_reply(in,out,1);}
+    os_wire_put32(out+7,(uint32_t)calibration.winding);
+    os_wire_put16(out+11,calibration.max_delta);os_wire_put16(out+13,calibration.forward);
+    os_wire_put16(out+15,calibration.reverse);os_wire_put16(out+17,calibration.flat);
+    out[19]=calibration.flags;return os_frame_reply(in,out,14);
+}
 static os_encoder_bus encoder;
 static bool input_enabled(void){return ((REG(0x40020d44u)&128u)!=0u)==(session.enable_high!=0u);}
 static void read_encoder(void){
     uint16_t raw=0,angle=0;os_encoder_result er=os_mt6816_read(&encoder,&raw);
     bench.flags=(uint8_t)(bench.flags&~3u);bench.encoder_status=(uint8_t)er;
     if(er==OS_ENC_OK){bench.raw_angle=raw;bench.flags|=2u;
-        if(os_hc32_calibrated_angle(raw,&angle)){bench.cal_angle=angle;bench.flags|=1u;}
+        if(calibration.flags==(OS_CAL_MARKERS|OS_CAL_WINDING)&&os_hc32_calibrated_angle(raw,&angle)){bench.cal_angle=angle;bench.flags|=1u;}
     }else if(bench.encoder_errors!=UINT32_MAX)bench.encoder_errors++;
 }
 #if OS_MOTOR_RUNTIME
@@ -162,6 +173,7 @@ void os_target_main(void){
     if(hz<1000000u||hz>48000000u)os_target_panic();
     if(!os_uart_init(&uart,&io,hz>>((REG(0x40002000u)>>11)&3u),115200u))os_target_panic();
     encoder=os_hc32_encoder_bus();
+    calibration=os_hc32_check_calibration();
     if(status==OS_BOARD_OK){
         bench.offset1=offsets.slot1;bench.offset2=offsets.slot2;
         flash=os_hc32_settings_flash();store=os_flash_settings_io(&flash);
@@ -214,7 +226,8 @@ void os_target_main(void){
             if(in[4]==30u)len=timing_reply(in,n,out);
             else
 #endif
-            if(status==OS_BOARD_OK && in[4]>=OS_GET_STORAGE && in[4]<=OS_SET_DRIVE)len=storage_request(in,n,out);
+            if(in[4]==35u)len=calibration_reply(in,n,out);
+            else if(status==OS_BOARD_OK && in[4]>=OS_GET_STORAGE && in[4]<=OS_SET_DRIVE)len=storage_request(in,n,out);
             else if(status==OS_BOARD_OK&&in[4]!=OS_GET_BENCH)len=os_run_dispatch(&run,&io,in,n,out);
             else len=os_bench_dispatch(&run.drive.control,&bench,in,n,out);
 #if OS_MOTOR_RUNTIME

@@ -108,6 +108,10 @@ class Studio:
         ttk.Button(teach, text="Apply taught limits", command=lambda: self.numeric_command(p.TEACH_APPLY,self.lower,self.upper)).grid(row=7,column=0,sticky="w",pady=8)
         ttk.Button(teach, text="Cancel teaching", command=self.cancel_teach).grid(row=7,column=1)
         ttk.Label(teach, textvariable=self.status_text, justify="left", wraplength=850).grid(row=8,column=0,columnspan=3,sticky="w",pady=12)
+        diagnostics = ttk.Frame(tabs, padding=12); tabs.add(diagnostics, text="Diagnostics")
+        self.calibration_text = tk.StringVar(value="Calibration not inspected")
+        ttk.Button(diagnostics, text="Inspect calibration", command=lambda: self.submit(lambda c: c.read(p.GET_CALIBRATION), self.show_calibration)).pack(anchor="w")
+        ttk.Label(diagnostics, textvariable=self.calibration_text, justify="left", wraplength=850).pack(anchor="w", pady=10)
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(50, self.pump)
         self.next_poll = 0
@@ -235,6 +239,10 @@ class Studio:
         self.status_text.set("{} · {} · PWM {} · EN {} · Reference {}\nActual {:,}   Target {:,}   Speed {:,} counts/s   Load {:.1f}%\nFaults: {}   Pending: {}   Missed ticks: {}".format(state,mode,"on" if r["flags"]&1 else "off","on" if r["flags"]&2 else "off","valid" if r["flags"]&32 else "unconfirmed",s["actual"],s["target"],s["speed_counts_s"],s["load_permille"]/10,fault_names(s["faults"]),fault_names(r["pending_fault"]),r["missed_ticks"]))
         self.history.append((time.monotonic()-self.start,s["actual"],s["target"],s["speed_counts_s"],s["load_permille"]))
         self.draw_graph()
+
+    def show_calibration(self, data):
+        winding, jump, forward, reverse, flat, flags = data
+        self.calibration_text.set("Structural check: {}\nWinding: {} counts\nLargest adjacent change: {} counts\nForward: {}  Reverse: {}  Flat: {}\nMarkers: {}  Half-turn ambiguity: {}\nRead-only check; does not establish physical calibration accuracy.".format("passed" if flags == 3 else "failed",winding,jump,forward,reverse,flat,"valid" if flags&1 else "invalid","yes" if flags&4 else "no"))
 
     def draw_graph(self):
         canvas = self.graph; canvas.delete("all")
