@@ -13,7 +13,8 @@ class LinkError(Exception):
 class DeviceRejected(Exception):
     def __init__(self, opcode, status):
         self.opcode, self.status = opcode, status
-        super().__init__("Command {} rejected (status {})".format(opcode, status))
+        reason = {1: "invalid command length", 2: "not permitted in the current state or invalid parameters", 3: "unsupported by this firmware or state"}.get(status, "unknown device error")
+        super().__init__("Command {} rejected: {} (status {})".format(opcode, reason, status))
 
 
 class FrameReader:

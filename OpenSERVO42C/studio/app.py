@@ -1,5 +1,6 @@
 """OpenSERVO42C Studio development interface (Python 3.8 / Tk 8.6)."""
 import csv
+import struct
 import time
 import tkinter as tk
 from collections import deque
@@ -7,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from tkinter import ttk, messagebox, filedialog
 from . import protocol as p
-from .client import ControllerClient, MODE_NAMES, LinkError, DeviceRejected
+from .client import ControllerClient, MODE_NAMES, LinkError, DeviceRejected, WRITE_FORMATS, NO_PAYLOAD
 from .session import probe
 from . import preferences
 from .tuning import analyze
@@ -53,7 +54,7 @@ class Studio:
         self.config_vars = []
         self.start = time.monotonic()
         root.title("OpenSERVO42C Studio — development")
-        root.geometry("980x700")
+        root.geometry("{}x{}".format(min(980, max(700, root.winfo_screenwidth()-40)), min(700, max(480, root.winfo_screenheight()-100))))
         style = ttk.Style(root)
         style.theme_use("clam")
         style.configure("TFrame", background="#20252d")
@@ -103,6 +104,7 @@ class Studio:
         self.graph = tk.Canvas(monitor, background="#151a21", highlightthickness=0, height=280)
         self.graph.pack(fill="both", expand=True, pady=10)
         self.graph.bind("<Configure>", lambda _: self.draw_graph())
+        self.graph.bind("<Map>", lambda _: self.draw_graph())
         self.graph_caption=tk.StringVar(value="Position · counts")
         ttk.Label(monitor,textvariable=self.graph_caption).pack(anchor="w")
         ttk.Button(monitor, text="Export recent samples to CSV", command=self.export_csv).pack(anchor="w", pady=5)
@@ -139,6 +141,7 @@ class Studio:
             self.config_vars.append(variables)
             ttk.Button(panel, text="Read controller", command=lambda g=get,v=variables: self.submit(lambda c: c.read(g), lambda data: self.fill(v,data))).grid(row=len(labels), column=0, sticky="w", pady=10)
             ttk.Button(panel, text="Apply to RAM", command=lambda o=put,v=variables: self.numeric_command(o,*v)).grid(row=len(labels), column=1, sticky="w")
+        ttk.Label(settings, text="Read → edit → Apply to RAM for each group → Save to retain after reboot. Imported profiles only fill the editors.", wraplength=850).pack(anchor="w", pady=4)
         ttk.Button(settings, text="Save current configuration to controller", command=self.save).pack(anchor="w", pady=8)
         profile_bar=ttk.Frame(settings);profile_bar.pack(fill="x",pady=4)
         ttk.Button(profile_bar,text="Read all RAM settings",command=self.read_profile).pack(side="left")
@@ -225,6 +228,7 @@ class Studio:
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(50, self.pump)
         self.next_poll = 0
+        self.refresh_ports()
 
     @staticmethod
     def field(parent, row, label, initial):
@@ -275,7 +279,10 @@ class Studio:
     def refresh_ports(self):
         try:
             from serial.tools import list_ports
-            self.port_picker["values"]=tuple(sorted(p.device for p in list_ports.comports()))
+            ports = tuple(sorted(port.device for port in list_ports.comports()))
+            self.port_picker["values"] = ports
+            if not self.connected and self.future is None and len(ports) == 1 and self.port.get().strip() not in ports:
+                self.port.set(ports[0])
         except Exception as exc:
             self.message.set("Port enumeration failed: "+str(exc)+". Enter the port manually.")
 
@@ -283,6 +290,8 @@ class Studio:
         if self.connected or self.future is not None:
             return
         device = self.port.get().strip()
+        if not device:
+            self.message.set("Select or enter a serial port first.");return
         def opening():
             client = self.opener(device)
             try:
@@ -300,6 +309,12 @@ class Studio:
         self.start=time.monotonic()
         self.trials.clear(); self.trial_pending = None; self.trial_monitor=False
         self.trace_rows=[];self.reset_captures(None)
+        for group in self.config_vars:
+            for var in group: var.set("")
+        self.trace_text.set("No recorded trace for this connection.")
+        self.calibration_text.set("Calibration not inspected")
+        self.cal_text.set("Inspect calibration before starting a new sweep. Uncouple the motor and verify output independently.")
+        for var in (self.position,self.rate,self.torque,self.trial_end,self.cal_current): var.set("")
         self.cal_active=False;self.cal_need_step=False;self.cal_sweep=None
         self.lut_active=False;self.lut_transfer=None;self.lut_progress["value"]=0
         self.trial_text.set('No comparison trials for this connection.')
@@ -367,7 +382,21 @@ class Studio:
         self.message.set("Profile loaded into editors only. Review drive, EN polarity and travel limits for this machine before applying each group.")
 
     def command(self, opcode, *values):
-        self.submit(lambda c: c.write(opcode,*values))
+        # Validate locally before queueing; malformed edits must not invalidate
+        # a healthy monitor snapshot or send a partial configuration.
+        try:
+            for name, _, put, _ in GROUPS:
+                if opcode == put:
+                    values = profiles.validate_group(name, values)
+                    break
+            if opcode in WRITE_FORMATS:
+                WRITE_FORMATS[opcode].pack(*values)
+            elif opcode not in NO_PAYLOAD or values:
+                raise ValueError("Unsupported command or unexpected parameters")
+        except (ValueError, TypeError, OverflowError, struct.error) as exc:
+            self.message.set("Check command values: "+str(exc))
+            return False
+        return self.submit(lambda c: c.write(opcode,*values))
 
     def numeric_command(self, opcode, *values):
         try:
@@ -477,7 +506,8 @@ class Studio:
         self.status_text.set(self.status_text.get()+"\nWarnings: {}   Observed: {}   ADC: {}   Phase: {}".format(fault_names(s["warnings"]),fault_names(s["observed"]),"fresh" if r["flags"]&4 else "not fresh","valid" if r["flags"]&8 else "invalid"))
         self.update_units()
         self.history.append((time.monotonic()-self.start,s["actual"],s["target"],s["speed_counts_s"],s["load_permille"]))
-        self.draw_graph()
+        if not self.graph_paused.get() and self.graph.winfo_ismapped():
+            self.draw_graph()
 
     def update_units(self):
         if not self.snapshot:
@@ -742,7 +772,7 @@ class Studio:
         unit={"Position":"counts","Error":"counts","Speed":"counts/s","Load":"%"}[view]
         self.graph_caption.set(view+" · "+unit+" · "+self.graph_range.get()+" · "+(", ".join(name for _,name,_ in series))+ (" · frozen" if self.graph_paused.get() else "")+(" · stale" if not self.connected or self.link_uncertain else ""))
         if len(rows)<2:
-            canvas.create_text(12,12,text="Waiting for position samples",fill="#b4c0ce",anchor="nw");return
+            canvas.create_text(12,12,text="Waiting for telemetry samples",fill="#b4c0ce",anchor="nw");return
         left,top=84,18;w=max(canvas.winfo_width()-left-18,1);h=max(canvas.winfo_height()-top-32,1)
         lo=min(r[col] for r in rows for col,_,_ in series);hi=max(r[col] for r in rows for col,_,_ in series)
         if hi==lo:lo-=1;hi+=1

@@ -1,7 +1,7 @@
 import json
 import unittest
 from studio import protocol as p
-from studio.profiles import GROUPS, capture, dumps, loads
+from studio.profiles import GROUPS, capture, dumps, loads, validate_group
 
 BASE={'Protection':(4096,2048,100,800,100,100,2), 'PID':(4096,0,64,2,500),
       'Motion':(10000,30000,15000,60000,1), 'Drive':(16,1000,500,2048,300,25,0,600,0),
@@ -22,6 +22,12 @@ class ProfileTests(unittest.TestCase):
         for group,idx,value in [('Protection',3,1001),('PID',0,1048577),('Motion',3,0),('Drive',7,500),('Travel',0,1001),('Drive',6,True),('PID',1,-1)]:
             bad=dict(BASE);v=list(bad[group]);v[idx]=value;bad[group]=v
             with self.assertRaises(ValueError):dumps(bad)
+    def test_single_group_editor(self):
+        for name, values in BASE.items():
+            self.assertEqual(validate_group(name, values), values)
+        for name, values in [('Travel',(5,1,1)), ('Drive',(16,1000,500,2048,300,25,0,400,0)), ('PID',(1,2,3,4,0)), ('PID',(1,2)), ('Protection',(1,1,0,2000,1,1,2))]:
+            with self.assertRaisesRegex(ValueError,name):
+                validate_group(name,values)
     def test_wrong_version_missing_group(self):
         data=json.loads(dumps(BASE));data['version']=True
         with self.assertRaises(ValueError):loads(json.dumps(data))

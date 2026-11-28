@@ -29,6 +29,8 @@ python -m pip install -r studio/requirements.txt
 python -m studio.app
 ```
 
+Studio refreshes serial ports at startup; select the controller and connect explicitly. Read the controller settings before editing, or load a profile into the editors. Invalid settings are rejected locally before being queued, and reconnecting clears old configuration edits. Applying a group changes RAM only; saving is a separate operation.
+
 Python 3.8/Tk 8.6 compatibility is intended; Windows 7 has not been independently tested. Serial disable is not an emergency stop. Keep motor output disabled and external EN inactive during settings and LUT programming. Calibration sweeps require an uncoupled motor.
 
 See [hardware evidence](docs/hardware.md), [protocol](docs/protocol.md), [memory and timing budgets](docs/memory-and-timing.md), and [bench validation](docs/bench-validation.md). Older development notes describe earlier implementation stages. The original factory project remains unchanged.

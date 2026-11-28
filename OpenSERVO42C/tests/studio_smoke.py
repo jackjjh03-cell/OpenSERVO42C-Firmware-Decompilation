@@ -41,6 +41,8 @@ def main():
         try:
             root.update();app.connect();until(lambda:app.connected and app.snapshot is not None)
             assert app.connection_text.get()=='CONNECTED 0.1.1'
+            assert not app.command(p.SET_PID,2048,32,64,2,0)
+            assert 'Check command values' in app.message.get()
             app.command(p.SET_PID,2048,32,64,2,500);until(lambda:app.future is None and app.pending is None)
             app.submit(lambda c:c.read(p.GET_PID),lambda values:app.fill(app.config_vars[1],values))
             until(lambda:app.config_vars[1][0].get()=='2048')
@@ -64,6 +66,7 @@ def main():
             app.disconnect();until(lambda:not app.connected)
             assert app.connection_text.get()=='DISCONNECTED'
             app.connect();until(lambda:app.connected and app.snapshot is not None)
+            assert all(not var.get() for group in app.config_vars for var in group)
             app.close()
             deadline=time.monotonic()+5
             while time.monotonic()<deadline:

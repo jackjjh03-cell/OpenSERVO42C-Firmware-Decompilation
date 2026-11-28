@@ -3,6 +3,7 @@ import unittest
 from concurrent.futures import Future
 from threading import Event
 from studio.app import Studio
+from studio import protocol as p
 
 class Message:
     def set(self, value): self.value=value
@@ -45,3 +46,12 @@ class QueueTests(unittest.TestCase):
             a=self.app();setattr(a,name,value)
             self.assertFalse(a.submit(lambda c:None));self.assertIsNone(a.future)
             self.assertTrue(a.submit(lambda c:None,urgent=True))
+
+    def test_invalid_commands_never_reach_worker(self):
+        a=self.app()
+        for opcode, values in ((p.SET_LIMITS,(10,-10,1)),(p.SET_PID,(0,0,0,0,0)),(p.MOVE_ABS,(2**31,)),(p.SET_RATE,(0,-1)),(p.ARM,(1,))):
+            self.assertFalse(a.command(opcode,*values))
+            self.assertIsNone(a.future)
+            self.assertIn("Check command values",a.message.value)
+        self.assertTrue(a.command(p.SET_LIMITS,-10,10,1))
+        self.assertIsNotNone(a.future)
