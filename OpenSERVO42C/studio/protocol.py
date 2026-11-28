@@ -10,6 +10,15 @@ STATUS_DATA = struct.Struct("<BBIIIiiiHB")
 PID_CONFIG = struct.Struct("<IIIIH")
 MOTION_CONFIG = struct.Struct("<IIIIB")
 CONTROL_DATA = struct.Struct("<iIIB")
+GET_BENCH = 12
+BENCH_DATA = struct.Struct("<7I8H3B")
+BENCH_FIELDS = ("ms", "core_hz", "adc_samples", "adc_errors", "encoder_errors",
+                "missed_ticks", "uart_dropped", "scale", "slot1", "slot2",
+                "raw_angle", "cal_angle", "pulse", "offset1", "offset2",
+                "board_status", "encoder_status", "flags")
+
+def bench_snapshot(payload):
+    return dict(zip(BENCH_FIELDS, BENCH_DATA.unpack(payload)))
 
 def crc16(data):
     crc = 0xffff
