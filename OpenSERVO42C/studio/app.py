@@ -78,7 +78,7 @@ class Studio:
         ttk.Label(unit_bar,text="Travel per motor rev (mm)").pack(side="left",padx=4)
         ttk.Entry(unit_bar,textvariable=self.travel_per_rev,width=10).pack(side="left")
         self.travel_per_rev.trace_add("write",lambda *_:self.update_units())
-        self.unit_text=tk.StringVar(value="Display only; motion commands and CSV remain in counts.")
+        self.unit_text=tk.StringVar(value="Monitor units are independent of motion inputs. CSV uses counts.")
         ttk.Label(monitor,textvariable=self.unit_text,wraplength=850).pack(anchor="w")
         self.graph = tk.Canvas(monitor, background="#151a21", highlightthickness=0, height=280)
         self.graph.pack(fill="both", expand=True, pady=10)
@@ -91,17 +91,25 @@ class Studio:
         ttk.Button(motion, text="Select mode", command=lambda: self.command(p.SELECT_MODE, MODE_NAMES.index(self.mode.get()))).grid(row=0, column=1)
         ttk.Button(motion, text="Arm", command=self.arm).grid(row=1, column=0, sticky="w", pady=8)
         ttk.Button(motion, text="Acknowledge fault", command=lambda: self.command(p.ACK)).grid(row=1, column=1)
-        self.position = self.field(motion, 2, "Absolute target (counts)", "0")
-        ttk.Button(motion, text="Move", command=lambda: self.numeric_command(p.MOVE_ABS, self.position)).grid(row=2, column=2)
-        self.rate = self.field(motion, 3, "Signed rate (counts/s)", "0")
+        self.position = self.field(motion, 2, "Absolute target (selected units)", "0")
+        ttk.Button(motion, text="Move", command=lambda: self.motion_command(p.MOVE_ABS, self.position)).grid(row=2, column=2)
+        self.rate = self.field(motion, 3, "Signed rate (selected units/s)", "0")
         self.lease = self.field(motion, 4, "Jog/torque lease (ms)", "250")
-        ttk.Button(motion, text="Set velocity", command=lambda: self.numeric_command(p.SET_RATE, self.rate, 0)).grid(row=3, column=2)
-        ttk.Button(motion, text="Jog for lease", command=lambda: self.numeric_command(p.SET_RATE, self.rate, self.lease)).grid(row=4, column=2)
+        ttk.Button(motion, text="Set velocity", command=lambda: self.motion_command(p.SET_RATE, self.rate, 0)).grid(row=3, column=2)
+        ttk.Button(motion, text="Jog for lease", command=lambda: self.motion_command(p.SET_RATE, self.rate, self.lease)).grid(row=4, column=2)
         self.torque = self.field(motion, 5, "Signed torque (raw current)", "0")
         ttk.Button(motion, text="Apply torque for lease", command=lambda: self.numeric_command(p.SET_TORQUE, self.torque, self.lease)).grid(row=5, column=2)
         ttk.Button(motion, text="Zero velocity/jog demand", command=lambda: self.command(p.SET_RATE, 0, 0)).grid(row=6, column=0, pady=8)
         ttk.Button(motion, text="Zero torque demand", command=lambda: self.command(p.SET_TORQUE, 0, 0)).grid(row=6, column=1)
-        ttk.Label(motion, text="Development firmware: do not use on a loaded machine.\nSerial disable is not a hardware emergency stop.", wraplength=800).grid(row=7, column=0, columnspan=3, sticky="w", pady=10)
+        unit_controls=ttk.Frame(motion);unit_controls.grid(row=7,column=0,columnspan=3,sticky="w",pady=6)
+        self.motion_unit=tk.StringVar(value="Counts")
+        ttk.Label(unit_controls,text="Motion input units").pack(side="left")
+        unit_select=ttk.Combobox(unit_controls,textvariable=self.motion_unit,values=units.UNITS,state="readonly",width=14)
+        unit_select.pack(side="left",padx=4)
+        unit_select.bind("<<ComboboxSelected>>",lambda _: (self.position.set(""),self.rate.set("")))
+        ttk.Label(unit_controls,text="Travel per motor rev (mm)").pack(side="left",padx=4)
+        ttk.Entry(unit_controls,textvariable=self.travel_per_rev,width=10).pack(side="left")
+        ttk.Label(motion, text="Development firmware: do not use on a loaded machine.\nSerial disable is not a hardware emergency stop.", wraplength=800).grid(row=8, column=0, columnspan=3, sticky="w", pady=10)
         settings = ttk.Frame(tabs, padding=12); tabs.add(settings, text="Settings")
         inner = ttk.Notebook(settings); inner.pack(fill="both", expand=True)
         for name, get, put, labels in GROUPS:
@@ -310,6 +318,27 @@ class Studio:
             self.message.set("Enter valid integer values first."); return
         self.command(opcode,*parsed)
 
+    def motion_command(self, opcode, value, lease=None):
+        unit=self.motion_unit.get();lead=self.travel_per_rev.get();raw=value.get()
+        try:
+            if opcode==p.MOVE_ABS:
+                count=units.command_counts(raw,unit,lead);args=(count,)
+                detail="Absolute target: {} counts".format(count)
+            elif opcode==p.SET_RATE:
+                count=units.command_counts(raw,unit,lead,-1000000,1000000)
+                ms=int(lease.get()) if isinstance(lease,tk.StringVar) else int(lease)
+                if not 0<=ms<=65535:raise ValueError("Lease must be 0–65535 ms")
+                args=(count,ms);detail="Rate: {} counts/s; lease: {} ms".format(count,ms)
+            else:raise ValueError("Unsupported unit-converted command")
+        except ValueError as exc:
+            self.message.set(str(exc));return
+        if unit!="Counts":
+            conversion="{} {}{}".format(raw,unit,"/s" if opcode==p.SET_RATE else "")
+            if unit in ("Millimeters","Inches"):conversion+=" at {} mm/motor rev".format(lead)
+            if not messagebox.askyesno("Confirm converted motion",conversion+"\n"+detail+"\nSend this command?"):
+                return
+        self.command(opcode,*args)
+
     def arm(self):
         if messagebox.askyesno("Arm motor", "Confirm safe clearance, current settings and independent stop. Enable motor output?"):
             self.command(p.ARM)
@@ -379,7 +408,7 @@ class Studio:
 
     def update_units(self):
         if not self.snapshot:
-            self.unit_text.set("No current position data. Commands and CSV use counts.");return
+            self.unit_text.set("No current position data. Wire commands and CSV use counts.");return
         s,_=self.snapshot
         try:
             self.unit_text.set(units.readout(s["actual"],s["target"],s["speed_counts_s"],self.display_unit.get(),self.travel_per_rev.get()))
