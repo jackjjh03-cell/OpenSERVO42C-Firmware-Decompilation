@@ -15,6 +15,7 @@ void os_init(os_controller *c) {
     c->cfg=(os_config){4096,2048,100,800,100,100,OS_MONITOR};
     c->pid_cfg=(os_pid_config){4096,0,0,2,8000};
     c->motion_cfg=(os_motion_config){10000,30000,15000,60000,OS_S_CURVE};
+    c->limits=(os_limits){INT32_MIN,INT32_MAX,false};
     c->state=OS_OFF;
 }
 bool os_config_valid(const os_config *v) {

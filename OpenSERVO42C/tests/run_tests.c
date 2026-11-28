@@ -59,6 +59,16 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     assert(command(&r,&io,OS_CONFIRM_REFERENCE,move,4)==OS_REJECTED);
     assert(os_run_init(&r,&io,&cfg,&offsets));
     for(unsigned i=0;i<100;i++)tick(&r,&io,i,false);
-    assert(command(&r,&io,OS_CONFIRM_REFERENCE,move,4)==OS_OK&&r.drive.encoder.position==40);
+    assert(command(&r,&io,OS_CONFIRM_REFERENCE,move,4)==OS_OK&&r.drive.encoder.position==40&&r.reference_confirmed);
+    assert(command(&r,&io,OS_SELECT_MODE,&position,1)==OS_OK);
+    tick(&r,&io,100,true);assert(r.drive.control.latest.reference_valid);
+    assert(command(&r,&io,OS_ARM,0,0)==OS_OK);
+    adc(&r,&io,true);os_run_tick(&r,&io,101,10000,true,0,true,false,false);
+    assert(r.drive.control.faults&OS_F_ENCODER);assert(!r.reference_confirmed);closed(&r,&m);
+    for(unsigned i=102;i<202;i++){adc(&r,&io,false);os_run_tick(&r,&io,i,10000,true,0,false,false,false);}
+    assert(command(&r,&io,OS_ACK,0,0)==OS_OK);
+    assert(r.drive.control.position_lost&&!r.reference_confirmed);
+    assert(command(&r,&io,OS_CONFIRM_REFERENCE,move,4)==OS_OK);
+    assert(r.reference_confirmed&&!r.drive.control.position_lost);
     puts("scheduler tests passed");return 0;
 }

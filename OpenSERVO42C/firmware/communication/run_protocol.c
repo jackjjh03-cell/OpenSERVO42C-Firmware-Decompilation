@@ -40,8 +40,7 @@ size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t 
         break;
     case OS_CONFIRM_REFERENCE:
         if(in[5]!=4u)p[0]=OS_BAD_LENGTH;
-        else if(r->enable||r->gate.enabled||!r->adc_good||!r->drive.phase_valid||
-            !os_drive_confirm_reference(&r->drive,(int32_t)get32(in+6),r->drive.encoder.previous,r->drive.previous_pulse))p[0]=OS_REJECTED;
+        else if(!os_run_confirm_reference(r,(int32_t)get32(in+6)))p[0]=OS_REJECTED;
         break;
     case OS_SET_LIVE_PID:
         if(in[5]!=18u){p[0]=OS_BAD_LENGTH;break;}

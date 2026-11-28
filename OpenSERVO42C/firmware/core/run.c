@@ -30,7 +30,8 @@ void os_run_tick(os_run *r,const os_board_io *io,uint32_t now,uint16_t angle,boo
     }
     r->last_count=r->adc_count;r->last_tick=now;r->tick_seen=true;
     os_run_enable(r,io,enable);
-    os_drive_position(&r->drive,angle,valid,pulse,enable,reference,travel);
+    os_drive_position(&r->drive,angle,valid,pulse,enable,(reference||r->reference_confirmed)&&!r->drive.control.position_lost,travel);
+    if(r->drive.control.position_lost)r->reference_confirmed=false;
     /* Recovery/arming require fresh healthy electrical feedback, even when off. */
     if(!r->adc_good)r->drive.control.healthy_ms=0;
     if(r->drive.control.state!=OS_ACTIVE)close_gate(r,io);
@@ -44,6 +45,13 @@ void os_run_adc(os_run *r,const os_board_io *io,bool enable,bool angle_valid,uin
     os_pwm_compare p;
     if(!os_drive_current(&r->drive,enable,angle_valid,angle,valid,scale,slot2,slot1,&p)){close_gate(r,io);return;}
     if(!os_gate_update(&r->gate,io,enable,&p))trip(r,io,OS_F_ELECTRICAL);
+}
+bool os_run_confirm_reference(os_run *r,int32_t position){
+    const os_limits *l=&r->drive.control.limits;
+    if(r->enable||r->gate.enabled||!r->adc_good||!r->drive.phase_valid||
+       (l->enabled&&(position<l->minimum||position>l->maximum))||
+       !os_drive_confirm_reference(&r->drive,position,r->drive.encoder.previous,r->drive.previous_pulse))return false;
+    r->reference_confirmed=true;return true;
 }
 bool os_run_arm(os_run *r,const os_board_io *io){
     if(!r->enable||!r->tick_seen||!r->adc_seen||!r->adc_good||r->gate.enabled||!os_drive_arm(&r->drive))return false;
