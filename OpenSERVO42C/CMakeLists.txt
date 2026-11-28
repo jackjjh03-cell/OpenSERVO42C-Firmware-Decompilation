@@ -45,3 +45,6 @@ add_test(NAME uart_stream COMMAND stream_tests)
 add_executable(drive_tests tests/drive_tests.c)
 target_link_libraries(drive_tests PRIVATE openservo)
 add_test(NAME drive_integration COMMAND drive_tests)
+
+add_executable(runtime_tests tests/runtime_tests.c firmware/target/runtime.c)
+add_test(NAME runtime_arithmetic COMMAND runtime_tests)

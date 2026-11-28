@@ -24,3 +24,6 @@ jobs:
 
       - name: Compile all Cortex-M0+ modules
         run: python3 OpenSERVO42C/tools/check_arm.py
+
+      - name: Verify complete target link
+        run: python3 OpenSERVO42C/tools/check_target_link.py

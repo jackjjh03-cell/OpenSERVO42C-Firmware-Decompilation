@@ -1,0 +1,29 @@
+"""Link all firmware code with startup/runtime into a non-deployable test ELF."""
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+ROOT=Path(__file__).resolve().parents[1]
+FW=ROOT/'firmware'
+
+def main():
+    with tempfile.TemporaryDirectory() as tmp:
+        out=Path(tmp)
+        files=sorted(p for group in ('core','hal','motion','communication','target') for p in (FW/group).glob('*') if p.suffix in ('.c','.S'))
+        files.append(ROOT/'tests'/'target_link_probe.c')
+        objects=[]
+        for index,src in enumerate(files):
+            obj=out/('module_%d.o'%index)
+            flags=['-Wall','-Wextra','-Werror','-Wconversion','-Wsign-conversion','-ffreestanding','-fno-builtin','-ffunction-sections','-fdata-sections'] if src.suffix=='.c' else []
+            subprocess.run([os.getenv('ARM_CLANG','clang'),'--target=arm-none-eabi','-mcpu=cortex-m0plus','-mthumb','-Oz',*flags,'-I',str(FW/'include'),'-c',str(src),'-o',str(obj)],check=True)
+            objects.append(str(obj))
+        elf=out/'LINK_TEST_ONLY.elf'
+        subprocess.run([os.getenv('ARM_LLD','ld.lld'),'-T',str(FW/'target'/'hc32l130.ld'),'--no-undefined','-Map='+str(out/'probe.map'),*objects,'-o',str(elf)],check=True)
+        nm=os.getenv('ARM_NM','nm')
+        assert not subprocess.check_output([nm,'-u',str(elf)],text=True).strip()
+        symbols={line.split()[-1]:int(line.split()[0],16) for line in subprocess.check_output([nm,str(elf)],text=True).splitlines() if len(line.split())==3}
+        flash=symbols['__app_flash_end'];ram=symbols['__static_bytes']
+        assert flash<=0x7000 and ram<=0x1800 and symbols['__stack_top']==0x20002000
+        print('Target link fixture: {} bytes flash, {} bytes static RAM, {} bytes reserved stack; no unresolved symbols'.format(flash,ram,symbols['__stack_top']-symbols['__stack_floor']))
+        print('Not a hardware application; no HEX or deployable artifact produced.')
+if __name__=='__main__':main()
