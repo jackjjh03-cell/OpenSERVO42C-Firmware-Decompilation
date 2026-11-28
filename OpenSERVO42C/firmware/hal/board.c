@@ -73,6 +73,9 @@ static void adc_init(const os_board_io *io){
 os_board_result os_board_prepare(const os_board_io *io,os_offsets *offsets){
     if(!clock_init(io))return OS_BOARD_CLOCK;
     pwm_init(io);B(GPIO+128u+20u,14,1);pin(io,128,14,32,0);
+    /* Original factory_config_pins: release the debug pin mapping and
+     * establish UART input configuration before assigning alternate functions. */
+    key(io,SYS+8);B(SYS+4,8,1);pin(io,0,13,3,0);pin(io,0,14,3,0);
     pin(io,0,9,39,0);pin(io,0,10,39,0);pin(io,64,4,39,0);
     if(!(R(GPIO+4)&(1u<<9)))return OS_BOARD_BUTTON;
     encoder_init(io);adc_init(io);

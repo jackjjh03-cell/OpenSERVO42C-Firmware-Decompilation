@@ -73,7 +73,10 @@ static size_t timing_reply(const uint8_t *in,size_t n,uint8_t *out){
     return os_frame_reply(in,out,25);
 }
 static void service_enable_edge(void){
-    if(os_board_enable_irq_take(&io))os_run_enable_edge(&run,&io,input_enabled());
+    if(os_board_enable_irq_take(&io)){
+        os_trace_invalidate(&trace);
+        os_run_enable_edge(&run,&io,input_enabled());
+    }
 }
 void enable_irq(void){service_enable_edge();}
 /* IRQs 4 and SysTick run at the same priority: neither can preempt the other.
@@ -122,6 +125,7 @@ void current_irq(void){
      * execution margin. Never continue driving with a known backlog. */
     bool late=timing_end(0,start);
     if(run.gate.enabled&&(late||((REG(0x40021014u)>>16)&7u)!=0u))timing_trip();
+    if(trace.running&&(!run.gate.enabled||run.drive.pending_fault))trace.unqualified=true;
 #endif
 }
 void systick_irq(void){
@@ -138,9 +142,14 @@ void systick_irq(void){
     if(sweep.flags&OS_CAL_ACTIVE)os_cal_tick(&sweep,&run,&io,ticks,fresh,(bench.flags&2u)!=0u,bench.raw_angle);
     else os_run_tick(&run,&io,ticks,bench.cal_angle,fresh&&(bench.flags&1u)!=0u,bench.pulse,input_enabled(),false,false);
     bench.missed_ticks=run.missed_ticks;
+    bool recording=trace.running;
+    if(!run.gate.enabled||run.drive.pending_fault)os_trace_invalidate(&trace);
     os_trace_tick(&trace,&run.drive.control,ticks);
     os_hc32_indicator(run.drive.control.state==OS_FAULT);
-    if(timing_end(1,start)&&run.gate.enabled)timing_trip();
+    if(timing_end(1,start)&&run.gate.enabled){
+        timing_trip();
+        if(recording)trace.unqualified=true;
+    }
 #endif
 }
 void uart_irq(void){os_uart_irq(&uart,&io,ticks);}
@@ -286,6 +295,7 @@ void os_target_main(void){
             if(len)(void)os_uart_send(&uart,&io,out,len);
             /* Save pauses SysTick, so do not mix flash maintenance with command timing. */
             if(in[4]!=OS_SAVE_SETTINGS&&!(in[4]>=OS_LUT_BEGIN&&in[4]<=OS_LUT_FINISH)&&timing_end(2,start)&&run.gate.enabled)timing_trip();
+            if(trace.running&&(!run.gate.enabled||run.drive.pending_fault||run.drive.control.live_pid))trace.unqualified=true;
             unlock(m);
 #else
             if(len){m=lock();(void)os_uart_send(&uart,&io,out,len);unlock(m);}

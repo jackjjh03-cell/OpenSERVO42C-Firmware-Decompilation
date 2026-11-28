@@ -25,6 +25,10 @@ int main(void){fake f={.lock=true,.adc=true,.button=true};os_board_io io={&f,rea
     assert(os_board_prepare(&io,&o)==OS_BOARD_OK);assert(o.slot2==2048&&o.slot1==2000&&f.conversions==18);
     assert((read(&f,0x40000c3cu)&65535u)==1200);assert((read(&f,0x40000d40u)&65535u)==1200);
     assert((read(&f,0x4000244cu)&0x7fffu)==(8u|(9u<<5)|(18u<<10)));
+    assert(read(&f,0x40002004u)&256u);
+    assert((read(&f,0x40020d00u)&0x6000u)==0x6000u);
+    assert((read(&f,0x40020d1cu)&0x6000u)==0x6000u);
+    assert(read(&f,0x40020c34u)==0&&read(&f,0x40020c38u)==0);
     os_board_step_init(&io,false);assert(read(&f,0x40003088u)==16&&read(&f,0x4000308cu)==64);
     os_board_step_init(&io,true);assert(read(&f,0x40003088u)==64&&read(&f,0x4000308cu)==16);
     write(&f,0x40020e50u,0xffffu);os_board_enable_irq_init(&io);

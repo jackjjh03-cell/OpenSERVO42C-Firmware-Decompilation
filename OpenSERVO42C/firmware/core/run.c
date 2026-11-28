@@ -8,6 +8,9 @@ bool os_run_init(os_run *r,const os_board_io *io,const os_drive_config *cfg,cons
     *r=(os_run){0};os_gate_close(&r->gate,io);return os_drive_init(&r->drive,cfg,offsets);
 }
 void os_run_disable(os_run *r,const os_board_io *io){
+    /* An immediate re-arm must not reuse the last active pulse target.
+     * Require a fresh ADC completion and an output-disabled position tick. */
+    if(r->drive.control.state==OS_ACTIVE){r->tick_seen=false;r->adc_good=false;}
     os_gate_close(&r->gate,io);os_drive_disable(&r->drive);
 }
 void os_run_enable(os_run *r,const os_board_io *io,bool enable){

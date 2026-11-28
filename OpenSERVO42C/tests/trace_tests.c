@@ -20,4 +20,11 @@ int main(void){os_trace t={0};os_controller c={0};c.state=OS_ACTIVE;c.mode=OS_PO
     assert(cmd(&t,OS_TRACE_START,start,4)==OS_OK);c.state=OS_FAULT;os_trace_tick(&t,&c,10);assert(!t.running&&t.count==1&&t.faulted);
     assert(cmd(&t,OS_TRACE_READ,read,3)==OS_REJECTED);assert(cmd(&t,OS_TRACE_STOP,0,0)==OS_OK);
     c.state=OS_ACTIVE;assert(cmd(&t,OS_TRACE_START,start,4)==OS_OK);os_trace_tick(&t,&c,20);c.state=OS_OFF;os_trace_tick(&t,&c,21);assert(t.count==1&&t.unqualified);c.state=OS_ACTIVE;os_trace_tick(&t,&c,22);os_trace_tick(&t,&c,24);assert(cmd(&t,OS_TRACE_STATUS,0,0)==OS_OK&&out[13]==12);
+    /* A short asynchronous output interruption cannot be hidden by the
+     * next sample being healthy. Completed captures remain intact. */
+    assert(cmd(&t,OS_TRACE_START,start,4)==OS_OK);os_trace_tick(&t,&c,30);
+    os_trace_invalidate(&t);os_trace_tick(&t,&c,32);os_trace_tick(&t,&c,34);
+    assert(cmd(&t,OS_TRACE_STATUS,0,0)==OS_OK&&out[13]==12);
+    assert(cmd(&t,OS_TRACE_START,start,4)==OS_OK);os_trace_tick(&t,&c,40);os_trace_tick(&t,&c,42);os_trace_tick(&t,&c,44);
+    os_trace_invalidate(&t);assert(cmd(&t,OS_TRACE_STATUS,0,0)==OS_OK&&out[13]==8);
     start[0]=161;assert(cmd(&t,OS_TRACE_START,start,4)==OS_REJECTED);puts("trace tests passed");return 0;}
