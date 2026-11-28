@@ -17,7 +17,7 @@ size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t 
         break;
     case OS_SELECT_MODE:
         if(in[5]!=1u)p[0]=OS_BAD_LENGTH;
-        else if(r->teaching||r->enable||r->gate.enabled||in[6]>OS_JOG||!os_select_mode(c,(os_mode)in[6]))p[0]=OS_REJECTED;
+        else if(r->teaching||r->enable||r->gate.enabled||in[6]>OS_TORQUE||!os_select_mode(c,(os_mode)in[6]))p[0]=OS_REJECTED;
         break;
     case OS_MOVE_ABS:
         if(in[5]!=4u)p[0]=OS_BAD_LENGTH;
@@ -75,6 +75,18 @@ size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t 
         if(in[5]){p[0]=OS_BAD_LENGTH;break;}
         os_wire_put32(p+1,(uint32_t)c->requested_rate);os_wire_put32(p+5,(uint32_t)c->rate_milli);
         os_wire_put16(p+9,c->jog_ms);len=11;break;
+    case OS_SET_TORQUE:
+        if(in[5]!=6u)p[0]=OS_BAD_LENGTH;
+        else{
+            int32_t demand=(int32_t)os_wire_get32(in+6),limit=r->drive.cfg.phase_limit;
+            if(!r->enable||!r->gate.enabled||!r->adc_good||r->drive.pending_fault||demand>limit||demand< -limit||
+                !os_set_torque(c,demand,os_wire_get16(in+10)))p[0]=OS_REJECTED;
+        }
+        break;
+    case OS_GET_TORQUE:
+        if(in[5]){p[0]=OS_BAD_LENGTH;break;}
+        os_wire_put32(p+1,(uint32_t)c->requested_torque);os_wire_put32(p+5,(uint32_t)(c->mode==OS_TORQUE?c->demand:0));
+        os_wire_put16(p+9,c->torque_ms);p[11]=c->torque_cutoff;len=12;break;
     default:return os_dispatch(c,in,n,out);
     }
     return os_frame_reply(in,out,len);

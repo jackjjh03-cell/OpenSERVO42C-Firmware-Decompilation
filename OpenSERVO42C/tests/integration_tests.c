@@ -42,5 +42,17 @@ int main(void){
     setup(&c,&s,OS_VELOCITY);c.limits=(os_limits){-100,100,true};assert(os_set_rate(&c,1000,0));
     for(unsigned n=0;n<300;n++){s.actual=c.latest.target;tick(&c,&s,1);assert(c.command<=100&&c.state==OS_ACTIVE);}
     assert(!c.moving&&c.command>0);s.actual=101;tick(&c,&s,1);assert(c.faults&OS_F_TRAVEL);
+    setup(&c,&s,OS_TORQUE);assert(!os_set_torque(&c,500,0));assert(!os_set_torque(&c,2048,100));
+    assert(os_set_torque(&c,500,3));tick(&c,&s,1);assert(c.demand==500&&c.torque_ms==2);
+    s.actual=9000;s.target=-9000;tick(&c,&s,1);assert(c.demand==500&&!c.follow_ms&&!c.stall_ms);
+    tick(&c,&s,1);assert(!c.demand&&c.torque_cutoff==OS_TORQUE_TIMEOUT);
+    assert(os_set_torque(&c,-500,100));s.speed_counts_s=-10001;tick(&c,&s,1);
+    assert(!c.demand&&c.torque_cutoff==OS_TORQUE_SPEED);s.speed_counts_s=0;tick(&c,&s,1);assert(!c.demand);
+    setup(&c,&s,OS_TORQUE);c.limits=(os_limits){-100,100,true};assert(os_set_torque(&c,500,100));
+    s.actual=100;tick(&c,&s,1);assert(!c.demand&&c.torque_cutoff==OS_TORQUE_LIMIT);
+    assert(os_set_torque(&c,-500,100));tick(&c,&s,1);assert(c.demand==-500);
+    s.actual=101;tick(&c,&s,1);assert(c.faults&OS_F_TRAVEL);assert(!c.demand&&!c.torque_ms);
+    setup(&c,&s,OS_TORQUE);assert(os_set_torque(&c,500,100));s.reference_valid=false;tick(&c,&s,1);
+    assert(c.faults&OS_F_REFERENCE);assert(!c.demand&&!c.requested_torque);
     puts("Controller integration tests passed");return 0;
 }

@@ -77,3 +77,8 @@ TIMING_DATA = struct.Struct("<6I") # peak core clocks, observed overruns, per lo
 SET_RATE, GET_RATE = range(31, 33)
 RATE_COMMAND = struct.Struct("<iH") # counts/s, jog lease in ms (zero for velocity)
 RATE_DATA = struct.Struct("<iiH") # requested counts/s, ramped milli-counts/s, remaining lease
+
+SET_TORQUE, GET_TORQUE = range(33, 35)
+TORQUE_COMMAND = struct.Struct("<iH") # signed raw ADC current counts, lease ms
+TORQUE_DATA = struct.Struct("<iiHB") # requested, applied demand, lease, cutoff flags
+TORQUE_TIMEOUT, TORQUE_SPEED, TORQUE_LIMIT = 1, 2, 4

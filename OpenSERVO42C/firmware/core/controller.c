@@ -7,7 +7,7 @@ static uint16_t dwell(uint16_t n, bool condition) {
     return !condition ? 0u : n==UINT16_MAX ? n : (uint16_t)(n+1u);
 }
 static void stop_demand(os_controller *c){
-    c->demand=0;c->moving=false;c->still_ms=0;c->live_pid=false;c->requested_rate=0;c->rate_milli=0;c->rate_remainder=0;c->jog_ms=0;os_pid_reset(&c->pid);
+    c->demand=0;c->moving=false;c->still_ms=0;c->live_pid=false;c->requested_rate=0;c->rate_milli=0;c->rate_remainder=0;c->jog_ms=0;c->requested_torque=0;c->torque_ms=0;c->torque_cutoff=0;os_pid_reset(&c->pid);
 }
 void os_init(os_controller *c) {
     *c=(os_controller){0};
@@ -59,7 +59,7 @@ bool os_arm(os_controller *c) {
     if(c->state!=OS_OFF || !c->hal_validated || c->faults ||
        c->position_lost || !c->latest.feedback_valid || !c->latest.enable_input ||
        c->observed || c->healthy_ms<c->cfg.clear_ms ||
-       (c->mode>OS_JOG) ||
+       (c->mode>OS_TORQUE) ||
        (c->mode!=OS_CNC && !c->latest.reference_valid) ||
        (c->limits.enabled && (!c->latest.reference_valid || !within(&c->limits,c->latest.actual)))) return false;
     stop_demand(c);c->command=c->latest.actual;c->motion=(os_motion){0};
@@ -119,6 +119,20 @@ static void rate_tick(os_controller *c){
     }
     c->command=(int32_t)pos;c->rate_milli=v;c->moving=v!=0||c->requested_rate!=0;
 }
+bool os_set_torque(os_controller *c,int32_t demand,uint16_t lease_ms){
+    if(c->state!=OS_ACTIVE||c->mode!=OS_TORQUE||!c->latest.reference_valid||!c->latest.feedback_valid||
+       !c->latest.enable_input||c->latest.travel_violation||magnitude(demand)>2047u||
+       (demand&&!lease_ms))return false;
+    c->requested_torque=demand;c->torque_ms=demand?lease_ms:0;c->torque_cutoff=0;return true;
+}
+static void torque_tick(os_controller *c,const os_sample *s){
+    if(c->torque_ms&&!--c->torque_ms)c->torque_cutoff|=OS_TORQUE_TIMEOUT;
+    if(magnitude(s->speed_counts_s)>c->motion_cfg.speed)c->torque_cutoff|=OS_TORQUE_SPEED;
+    if(c->limits.enabled&&((c->requested_torque>0&&s->actual>=c->limits.maximum)||
+       (c->requested_torque<0&&s->actual<=c->limits.minimum)))c->torque_cutoff|=OS_TORQUE_LIMIT;
+    if(c->torque_cutoff){c->requested_torque=0;c->torque_ms=0;}
+    c->demand=c->requested_torque;c->moving=c->demand!=0;
+}
 void os_tick_1ms(os_controller *c,const os_sample *s) {
     os_sample sample=*s;
     uint32_t critical=sample.critical & OS_CRITICAL;
@@ -135,6 +149,11 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
         if(!sample.reference_valid)critical|=OS_F_REFERENCE;
         if(!critical&&sample.enable_input)rate_tick(c);
         sample.target=c->command;
+    }
+    if(c->mode==OS_TORQUE){
+        /* No position tracking objective in direct torque mode. */
+        sample.target=sample.actual;
+        if(c->state==OS_ACTIVE&&!sample.reference_valid)critical|=OS_F_REFERENCE;
     }
     if(c->limits.enabled){
         if(c->state==OS_ACTIVE&&!sample.reference_valid)critical|=OS_F_REFERENCE;
@@ -168,7 +187,8 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
     else if(c->state==OS_ACTIVE){
         c->still_ms=dwell(c->still_ms,unchanged && !c->moving);
         bool stationary=c->still_ms>=100u && magnitude(sample.speed_counts_s)<=c->cfg.stall_speed_counts_s;
-        c->demand=os_pid_step(&c->pid,c->live_pid?&c->live_pid_cfg:&c->pid_cfg,sample.target,sample.actual,stationary);
+        if(c->mode==OS_TORQUE)torque_tick(c,&sample);
+        else c->demand=os_pid_step(&c->pid,c->live_pid?&c->live_pid_cfg:&c->pid_cfg,sample.target,sample.actual,stationary);
     } else stop_demand(c);
 }
 bool os_acknowledge(os_controller *c) {

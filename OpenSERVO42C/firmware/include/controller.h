@@ -36,7 +36,9 @@ typedef struct {
     uint16_t stall_ms, follow_ms, healthy_ms, still_ms;
     int32_t command, demand;
     int32_t requested_rate, rate_milli, rate_remainder;
-    uint16_t jog_ms;
+    uint16_t jog_ms, torque_ms;
+    int32_t requested_torque;
+    uint8_t torque_cutoff;
     os_state state;
     os_mode mode;
     bool hal_validated, position_lost, moving;
@@ -54,6 +56,9 @@ void os_disable(os_controller *c);
 bool os_start_move(os_controller *c,int32_t end);
 /* Signed encoder counts/s. Jog requires a renewable nonzero lease. */
 bool os_set_rate(os_controller *c,int32_t rate,uint16_t lease_ms);
+enum { OS_TORQUE_TIMEOUT=1u, OS_TORQUE_SPEED=2u, OS_TORQUE_LIMIT=4u };
+/* Signed quadrature current demand in raw ADC counts, not Nm. */
+bool os_set_torque(os_controller *c,int32_t demand,uint16_t lease_ms);
 void os_tick_1ms(os_controller *c, const os_sample *s);
 bool os_acknowledge(os_controller *c);
 #endif

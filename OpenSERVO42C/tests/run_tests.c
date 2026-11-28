@@ -133,5 +133,16 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     assert(r.drive.control.rate_milli==30000&&r.drive.control.jog_ms==49);
     assert(command(&r,&io,OS_DISABLE,0,0)==OS_OK);closed(&r,&m);
     assert(!r.drive.control.requested_rate&&!r.drive.control.rate_milli);
+    assert(os_run_init(&r,&io,&cfg,&offsets));
+    uint8_t torque=OS_TORQUE,effort[]={244,1,0,0,10,0},too_high[]={245,1,0,0,10,0};
+    assert(command(&r,&io,OS_SELECT_MODE,&torque,1)==OS_OK);
+    for(unsigned i=0;i<100;i++){adc(&r,&io,true);os_run_tick(&r,&io,i,0,true,0,true,true,false);}
+    assert(command(&r,&io,OS_ARM,0,0)==OS_OK);
+    assert(command(&r,&io,OS_SET_TORQUE,too_high,6)==OS_REJECTED);
+    assert(command(&r,&io,OS_SET_TORQUE,effort,6)==OS_OK);
+    adc(&r,&io,true);os_run_tick(&r,&io,100,0,true,0,true,true,false);
+    assert(r.drive.control.demand==500&&command(&r,&io,OS_GET_TORQUE,0,0)==OS_OK);
+    os_run_enable_edge(&r,&io,true);closed(&r,&m);tick(&r,&io,101,true);
+    assert(!r.drive.control.demand&&!r.drive.control.torque_ms);
     puts("scheduler tests passed");return 0;
 }
