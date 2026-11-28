@@ -127,3 +127,6 @@ set_tests_properties(studio_profiles PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRE
 
 add_test(NAME studio_units COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_units.py)
 set_tests_properties(studio_units PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_test(NAME studio_queue COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_studio_queue.py)
+set_tests_properties(studio_queue PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")

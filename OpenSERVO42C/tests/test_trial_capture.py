@@ -42,3 +42,11 @@ class CaptureTests(unittest.TestCase):
     def test_stale_capture(self):
         c=Fake();cap=self.begin(c);c.finish();c.rows=[((t+100)&0xffffffff,a,b,d,l) for t,a,b,d,l in c.rows]
         with self.assertRaises(ValueError): finish_trial(c,cap)
+    def test_cancelled_before_trace_or_motion(self):
+        c=Fake()
+        with self.assertRaisesRegex(ValueError,'cancelled'):
+            begin_trial(c,100,9,2,5,8,cancelled=lambda:True)
+        self.assertEqual(c.writes,[])
+        with self.assertRaisesRegex(ValueError,'cancelled'):
+            begin_trial(c,100,9,2,5,8,cancelled=lambda:bool(c.writes))
+        self.assertEqual(c.writes,[(p.TRACE_START,(9,2))])

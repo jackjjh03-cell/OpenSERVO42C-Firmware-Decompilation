@@ -253,7 +253,7 @@ void os_target_main(void){
             if(status==OS_BOARD_OK){service_enable_edge();os_run_enable(&run,&io,input_enabled());}
 #endif
 #if OS_MOTOR_RUNTIME
-            if(in[4]>=OS_CAL_START&&in[4]<=OS_CAL_STOP)len=os_cal_dispatch(&sweep,&run,&io,ticks,(bench.flags&2u)!=0u,bench.raw_angle,in,n,out);
+            if(!upload.active&&in[4]>=OS_CAL_START&&in[4]<=OS_CAL_STOP)len=os_cal_dispatch(&sweep,&run,&io,ticks,(bench.flags&2u)!=0u,bench.raw_angle,in,n,out);
             else if((sweep.flags&OS_CAL_ACTIVE)&&in[4]!=OS_GET_BENCH){
                 if(os_frame_valid(in,n)){
                     if(in[4]==OS_DISABLE&&!in[5]){os_cal_stop(&sweep,&run,&io,false);out[6]=OS_OK;}

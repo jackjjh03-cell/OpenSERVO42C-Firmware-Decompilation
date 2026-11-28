@@ -4,6 +4,7 @@ import time
 import tkinter as tk
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 from tkinter import ttk, messagebox, filedialog
 from . import protocol as p
 from .client import ControllerClient, MODE_NAMES
@@ -40,6 +41,7 @@ class Studio:
         self.connected = False
         self.future = None
         self.pending = None
+        self.cancel_trial = Event()
         self.closing = False
         self.snapshot = None
         self.history = deque(maxlen=1200)
@@ -213,19 +215,26 @@ class Studio:
         for var, val in zip(variables, values):
             var.set(str(val))
 
-    def submit(self, action, done=None, quiet=False, urgent=False):
+    def submit(self, action, done=None, quiet=False, urgent=False, internal=False):
+        if urgent:
+            self.cancel_trial.set()
+        elif (self.closing or self.cal_active or self.lut_active) and not internal:
+            if not quiet: self.message.set("Calibration owns the connection. Stop or finish it first.")
+            return False
         if not self.connected:
             if not quiet: self.message.set("Connect first.")
-            return
+            return False
         if self.future is not None:
             if not quiet and (urgent or (self.quiet and self.pending is None)):
-                self.pending = (action, done, urgent)
+                self.pending = (action, done, urgent, internal)
                 self.message.set("Command queued after current transaction.")
-            elif not quiet:
+                return True
+            if not quiet:
                 self.message.set("Serial transaction in progress. Hardware stop remains independent.")
-            return
+            return False
         self.future = self.worker.submit(lambda: action(self.client))
         self.done, self.quiet = done, quiet
+        return True
 
     def disable(self):
         self.cal_active=False;self.cal_need_step=False;self.lut_active=False
@@ -257,6 +266,7 @@ class Studio:
     def on_connected(self, _):
         self.connected = True; self.snapshot = None; self.history.clear()
         self.trials.clear(); self.trial_pending = None
+        self.trace_rows=[];self.reset_captures(None)
         self.cal_active=False;self.cal_need_step=False;self.cal_sweep=None
         self.lut_active=False;self.lut_transfer=None;self.lut_progress["value"]=0
         self.trial_text.set('No comparison trials for this connection.')
@@ -279,6 +289,7 @@ class Studio:
     def on_disconnected(self, _):
         self.connected = False; self.snapshot = None
         self.status_text.set("Disconnected — motor state unknown")
+        self.calibration_text.set("No calibration snapshot")
         self.update_units();self.detail_text.set("Disconnected")
 
     def fill_profile(self, groups):
@@ -361,36 +372,38 @@ class Studio:
                 if self.lut_active:
                     self.lut_active=False
                     self.cal_text.set("LUT transfer interrupted: "+str(exc)+". Calibration may be invalid; inspect and restart from the beginning. No write retried.")
-                    self.pending=(lambda c:c.write(p.LUT_ABORT),None,True)
+                    if self.pending is None or not self.pending[2]:
+                        self.pending=(lambda c:c.write(p.LUT_ABORT),None,True,True)
                 if self.cal_active:
                     self.cal_active=False;self.cal_need_step=False
                     self.cal_text.set("Calibration interrupted: "+str(exc)+". Verify output independently.")
-                    self.pending=(lambda c:c.write(p.CAL_STOP),None,True)
+                    if self.pending is None or not self.pending[2]:
+                        self.pending=(lambda c:c.write(p.CAL_STOP),None,True,True)
                 self.message.set(str(exc)); self.snapshot = None
                 self.status_text.set("Controller state unknown — verify output independently.")
                 self.update_units()
             if self.pending is not None:
-                action, callback, urgent = self.pending; self.pending = None
+                action, callback, urgent, internal = self.pending; self.pending = None
                 if urgent or (not failed and not self.closing):
-                    self.submit(action, callback, urgent=urgent)
+                    self.submit(action, callback, urgent=urgent, internal=internal)
         if self.closing:
             if self.future is None:
                 if self.connected:
-                    self.submit(lambda c: c.close(), self.on_disconnected)
+                    self.submit(lambda c: c.close(), self.on_disconnected, internal=True)
                     self.connected = False
                 else:
                     self.worker.shutdown(wait=False); self.root.destroy(); return
         elif self.connected and self.future is None and self.lut_active:
             transfer=self.lut_transfer
-            self.submit(lambda c:transfer.advance(c),self.lut_advance,True)
+            self.submit(lambda c:transfer.advance(c),self.lut_advance,True,internal=True)
         elif self.connected and self.future is None and time.monotonic() >= self.next_poll:
             self.next_poll = time.monotonic() + 0.25
             if self.cal_active:
                 if self.cal_need_step:
                     self.cal_need_step=False
-                    self.submit(lambda c:c.write(p.CAL_STEP),quiet=True)
+                    self.submit(lambda c:c.write(p.CAL_STEP),quiet=True,internal=True)
                 else:
-                    self.submit(lambda c:c.read(p.CAL_STATUS),self.calibration_sample,True)
+                    self.submit(lambda c:c.read(p.CAL_STATUS),self.calibration_sample,True,internal=True)
             else:
                 self.submit(lambda c: (c.status(),c.run_status()), self.update_monitor, True)
         self.root.after(50, self.pump)
@@ -445,7 +458,8 @@ class Studio:
         self.cal_sweep=sweep
         self.cal_active=True;self.cal_need_step=False
         self.cal_text.set("Starting calibration. Verify the shaft is free to turn.")
-        self.submit(lambda c:c.write(p.CAL_START,current),quiet=False)
+        if not self.submit(lambda c:c.write(p.CAL_START,current),internal=True):
+            self.cal_active=False
 
     def calibration_sample(self,status):
         if not self.cal_active: return
@@ -501,7 +515,7 @@ class Studio:
         self.calibration_text.set("Structural check: {}\nWinding: {} counts\nLargest adjacent change: {} counts\nForward: {}  Reverse: {}  Flat: {}\nMarkers: {}  Half-turn ambiguity: {}\nRead-only check; does not establish physical calibration accuracy.".format("passed" if flags == 3 else "failed",winding,jump,forward,reverse,flat,"valid" if flags&1 else "invalid","yes" if flags&4 else "no"))
 
     def start_trial(self):
-        if not self.connected or self.future is not None and not self.quiet:
+        if not self.connected or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
             self.message.set("Connect and wait for the current transaction."); return
         if self.trial_pending is not None:
             self.message.set("Retrieve or clear the previous trial first."); return
@@ -514,7 +528,10 @@ class Studio:
         def started(capture):
             self.trial_pending=capture
             self.trial_text.set("Test move accepted. Wait for trace completion, disable output, then retrieve. No gain changes have been sent.")
-        self.submit(lambda c:begin_trial(c,*args),started)
+        # Each trial owns a separate cancellation token; a subsequent trial
+        # cannot clear a cancellation requested for an older in-flight trial.
+        token=Event();self.cancel_trial=token
+        self.submit(lambda c:begin_trial(c,*args,cancelled=token.is_set),started)
 
     def retrieve_trial(self):
         capture=self.trial_pending
@@ -613,7 +630,7 @@ class Studio:
         lo = min(min(r[1],r[2]) for r in rows); hi = max(max(r[1],r[2]) for r in rows)
         if hi==lo: hi+=1
         for col,color in ((1,"#66b8f5"),(2,"#eea34a")):
-            points = [coord for i,r in enumerate(rows) for coord in (6+w*i/(len(rows)-1), 12+h*(hi-r[col])/(hi-lo))]
+            points = [coord for i,r in enumerate(rows) for coord in (6+w*(r[0]-rows[0][0])/max(rows[-1][0]-rows[0][0],0.001), 12+h*(hi-r[col])/(hi-lo))]
             canvas.create_line(*points,fill=color,width=2)
         canvas.create_text(8,8,text=str(hi),fill="#b4c0ce",anchor="nw")
         canvas.create_text(8,h+12,text=str(lo),fill="#b4c0ce",anchor="sw")
@@ -627,10 +644,11 @@ class Studio:
             except OSError as exc: self.message.set(str(exc))
 
     def close(self):
-        if self.connected and not messagebox.askyesno("Exit", "Exiting does not stop the motor. Continue?"):
+        if self.connected and not messagebox.askyesno("Exit", "Exiting does not stop ordinary motor motion. Continue?"):
             return
         if self.cal_active:self.stop_calibration()
         if self.lut_active:self.abort_lut()
+        self.cancel_trial.set()
         self.closing = True
 
 

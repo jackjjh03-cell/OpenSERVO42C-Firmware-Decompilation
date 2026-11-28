@@ -29,7 +29,11 @@ def configuration(client):
     return gains, context
 
 
-def begin_trial(client, end, count, interval, tolerance, tail_ms):
+def begin_trial(client, end, count, interval, tolerance, tail_ms, cancelled=lambda:False):
+    def check_cancelled():
+        if cancelled():
+            raise ValueError("Trial cancelled before motion was sent")
+    check_cancelled()
     if not (-(2**31) <= end < 2**31 and 5 <= count <= 160 and 1 <= interval <= 65535 and
             1 <= tolerance <= 100000 and 3*interval <= tail_ms < (count-2)*interval and tail_ms % interval == 0):
         raise ValueError("Invalid endpoint or recording window")
@@ -53,6 +57,7 @@ def begin_trial(client, end, count, interval, tolerance, tail_ms):
         raise ValueError("Comparative test moves require enabled travel limits and protect policy")
     if abs(end-start) <= tolerance:
         raise ValueError("Declared move must exceed the settling tolerance")
+    check_cancelled()
     client.write(p.TRACE_START,count,interval)
     # Confirm at least one baseline sample before issuing motion. No motion retries.
     for _ in range(3):
@@ -67,6 +72,7 @@ def begin_trial(client, end, count, interval, tolerance, tail_ms):
     if after['flags']&63 != 47 or after['pending_fault']:
         raise ValueError("Output or feedback changed; no move sent")
     capture = Capture(gains,context,start,end,count,interval,tolerance,tail_ms,run['tick'],after['tick'])
+    check_cancelled()
     client.write(p.MOVE_ABS,end)
     return capture
 
