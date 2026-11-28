@@ -15,6 +15,8 @@ typedef struct {
 /* Original 48 MHz flash timing table, verified by register readback. */
 bool os_flash_prepare_timing(os_flash *f,uint32_t core_hz);
 bool os_flash_idle(os_flash *f);
+/* Requires persisted dirty calibration in BOTH settings slots; caller owns ordering. */
+bool os_flash_lut_write(os_flash *f,uint16_t offset,const uint8_t *data);
 os_settings_io os_flash_settings_io(os_flash *f);
 os_flash os_hc32_settings_flash(void);
 #endif

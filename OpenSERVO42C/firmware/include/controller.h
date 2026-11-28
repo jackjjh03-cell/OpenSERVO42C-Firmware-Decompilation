@@ -45,6 +45,8 @@ typedef struct {
 } os_controller;
 void os_init(os_controller *c);
 bool os_config_valid(const os_config *v);
+/* Settings only; does not clear faults or authorize motion. */
+bool os_setup_allowed(const os_controller *c);
 bool os_configure(os_controller *c, const os_config *v);
 bool os_set_pid(os_controller *c,const os_pid_config *v);
 bool os_set_live_pid(os_controller *c,const os_pid_config *v);

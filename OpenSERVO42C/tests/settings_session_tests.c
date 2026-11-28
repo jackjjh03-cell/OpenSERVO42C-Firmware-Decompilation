@@ -31,4 +31,9 @@ int main(void){mock m={0};memset(m.pages,255,sizeof m.pages);os_board_io b={&m,r
     assert(os_storage_dispatch(&s,&r,&io,false,set,23,reply)==9&&reply[6]==OS_OK&&r.drive.cfg.microsteps==32&&s.enable_high==1&&!r.drive.control.hal_validated);
     set[17]=2;crc=os_crc16(set+2,19);set[21]=(uint8_t)crc;set[22]=(uint8_t)(crc>>8);
     assert(os_storage_dispatch(&s,&r,&io,false,set,23,reply)==9&&reply[6]==OS_BAD_LENGTH);
+    /* Missing factory LUT must not deadlock the initial setup. No fault is cleared. */
+    r.drive.control.state=OS_FAULT;r.drive.control.faults=OS_F_ENCODER;r.drive.control.latest.enable_input=false;
+    assert(os_setup_allowed(&r.drive.control));assert(os_settings_commit(&s,&r,&io,true));
+    assert(r.drive.control.state==OS_FAULT&&r.drive.control.faults==OS_F_ENCODER&&!os_run_arm(&r,&b));
+    r.drive.control.faults|=OS_F_ELECTRICAL;assert(!os_setup_allowed(&r.drive.control));assert(!os_settings_commit(&s,&r,&io,true));
     puts("settings session passed");return 0;}

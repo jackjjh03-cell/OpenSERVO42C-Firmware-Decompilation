@@ -23,17 +23,21 @@ bool os_config_valid(const os_config *v) {
            v->stall_load_permille<=1000u && v->stall_load_permille>0u &&
            v->dwell_ms>0u && v->clear_ms>0u && v->policy<=OS_PROTECT;
 }
+bool os_setup_allowed(const os_controller *c){
+    return c->state==OS_OFF||(c->state==OS_FAULT&&!c->latest.enable_input&&
+        !(c->faults&~(uint32_t)(OS_F_ENCODER|OS_F_REFERENCE)));
+}
 bool os_configure(os_controller *c,const os_config *v) {
-    if(c->state==OS_ACTIVE || c->state==OS_FAULT || !os_config_valid(v)) return false;
+    if(!os_setup_allowed(c) || !os_config_valid(v)) return false;
     c->cfg=*v; c->stall_ms=0; c->follow_ms=0; c->healthy_ms=0; return true;
 }
 bool os_set_pid(os_controller *c,const os_pid_config *v){
-    if(c->state!=OS_OFF || !os_pid_config_valid(v))return false;
+    if(!os_setup_allowed(c) || !os_pid_config_valid(v))return false;
     c->pid_cfg=*v;os_pid_reset(&c->pid);return true;
 }
 static bool within(const os_limits *l,int32_t p){return !l->enabled||(p>=l->minimum&&p<=l->maximum);}
 bool os_set_limits(os_controller *c,const os_limits *v){
-    if(c->state!=OS_OFF||c->latest.enable_input||v->minimum>=v->maximum)return false;
+    if(!os_setup_allowed(c)||c->latest.enable_input||v->minimum>=v->maximum)return false;
     c->limits=*v;c->healthy_ms=0;return true;
 }
 bool os_set_live_pid(os_controller *c,const os_pid_config *v){
@@ -48,7 +52,7 @@ bool os_set_live_pid(os_controller *c,const os_pid_config *v){
     return true;
 }
 bool os_set_motion(os_controller *c,const os_motion_config *v){
-    if(c->state!=OS_OFF || !os_motion_config_valid(v))return false;
+    if(!os_setup_allowed(c) || !os_motion_config_valid(v))return false;
     c->motion_cfg=*v;return true;
 }
 bool os_select_mode(os_controller *c, os_mode m) {

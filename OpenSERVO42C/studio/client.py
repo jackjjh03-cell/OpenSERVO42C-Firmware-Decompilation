@@ -56,7 +56,7 @@ READ_FORMATS = {
     p.GET_STORAGE: p.STORAGE_DATA, p.GET_DRIVE: p.DRIVE_DATA,
     p.GET_TIMING: p.TIMING_DATA, p.GET_RATE: p.RATE_DATA,
     p.GET_TORQUE: p.TORQUE_DATA, p.GET_CALIBRATION: p.CALIBRATION_DATA,
-    p.TRACE_STATUS: p.TRACE_STATUS_DATA, p.CAL_STATUS: p.CAL_STATUS_DATA,
+    p.TRACE_STATUS: p.TRACE_STATUS_DATA, p.CAL_STATUS: p.CAL_STATUS_DATA, p.LUT_STATUS: p.LUT_STATUS_DATA,
 }
 WRITE_FORMATS = {
     p.SET_CONFIG: p.CONFIG, p.SET_PID: p.PID_CONFIG,
@@ -64,9 +64,9 @@ WRITE_FORMATS = {
     p.SET_LIVE_PID: p.PID_CONFIG, p.SET_DRIVE: p.DRIVE_DATA,
     p.SELECT_MODE: p.MODE_DATA, p.MOVE_ABS: p.POSITION_DATA,
     p.CONFIRM_REFERENCE: p.POSITION_DATA, p.TEACH_APPLY: p.TEACH_MARGIN_DATA,
-    p.SET_RATE: p.RATE_COMMAND, p.SET_TORQUE: p.TORQUE_COMMAND, p.TRACE_START: p.TRACE_START_DATA, p.CAL_START: p.CAL_START_DATA,
+    p.SET_RATE: p.RATE_COMMAND, p.SET_TORQUE: p.TORQUE_COMMAND, p.TRACE_START: p.TRACE_START_DATA, p.CAL_START: p.CAL_START_DATA, p.LUT_BEGIN: p.LUT_BEGIN_DATA, p.LUT_WRITE: p.LUT_WRITE_DATA,
 }
-NO_PAYLOAD = {p.DISABLE, p.ACK, p.ARM, p.TEACH_BEGIN, p.TEACH_CANCEL, p.SAVE_SETTINGS, p.TRACE_STOP, p.CAL_STEP, p.CAL_STOP}
+NO_PAYLOAD = {p.DISABLE, p.ACK, p.ARM, p.TEACH_BEGIN, p.TEACH_CANCEL, p.SAVE_SETTINGS, p.TRACE_STOP, p.CAL_STEP, p.CAL_STOP, p.LUT_FINISH, p.LUT_ABORT}
 STATUS_FIELDS = ("state", "mode", "faults", "observed", "warnings", "target", "actual",
                  "speed_counts_s", "load_permille", "position_lost")
 RUN_FIELDS = ("flags", "pending_fault", "tick", "adc_count", "missed_ticks")
@@ -144,7 +144,7 @@ class ControllerClient:
         else:
             payload = WRITE_FORMATS[opcode].pack(*values)
         # Flash programming is slower than an ordinary command; no retries.
-        result = self.request(opcode, payload, timeout=5.0 if opcode == p.SAVE_SETTINGS else None)
+        result = self.request(opcode, payload, timeout=5.0 if opcode in (p.SAVE_SETTINGS,p.LUT_BEGIN,p.LUT_WRITE,p.LUT_FINISH) else None)
         if result:
             raise LinkError("unexpected write reply")
 

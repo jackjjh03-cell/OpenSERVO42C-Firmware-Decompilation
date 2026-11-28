@@ -96,3 +96,9 @@ CAL_START, CAL_STEP, CAL_STATUS, CAL_STOP = range(40, 44)
 CAL_START_DATA = struct.Struct("<H")
 CAL_STATUS_DATA = struct.Struct("<HHB") # index, settled raw angle, flags
 CAL_ACTIVE, CAL_READY, CAL_DONE, CAL_ABORTED = 1, 2, 4, 8
+
+LUT_BEGIN, LUT_WRITE, LUT_FINISH, LUT_STATUS, LUT_ABORT = range(44, 49)
+LUT_BEGIN_DATA = struct.Struct("<I")
+LUT_WRITE_DATA = struct.Struct("<H32s")
+LUT_STATUS_DATA = struct.Struct("<HBB")
+LUT_LEGACY, LUT_DIRTY, LUT_VERIFIED = 0, 1, 2

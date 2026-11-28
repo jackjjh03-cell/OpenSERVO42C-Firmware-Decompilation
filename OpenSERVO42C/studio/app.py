@@ -11,6 +11,7 @@ from .tuning import analyze
 from .tuning_trials import PROFILES, rank_trials
 from .trial_capture import begin_trial, finish_trial
 from .sweep import Sweep
+from .lut_transfer import LutTransfer
 
 GROUPS = (
     ("Protection", p.GET_CONFIG, p.SET_CONFIG, ("Following error (counts)", "Stall error (counts)", "Stall speed (counts/s)", "Stall load (permille)", "Fault dwell (ms)", "Clear dwell (ms)", "Policy (0 monitor, 1 warn, 2 protect)")),
@@ -147,13 +148,18 @@ class Studio:
         ttk.Label(trials,textvariable=self.trial_text,justify="left",wraplength=850).grid(row=8,column=0,columnspan=3,sticky="w",pady=12)
         calibrate = ttk.Frame(tabs, padding=12); tabs.add(calibrate,text="Calibration")
         self.cal_active=False; self.cal_need_step=False; self.cal_sweep=None
+        self.lut_active=False; self.lut_transfer=None
         self.cal_current=self.field(calibrate,0,"Calibration current (raw counts)","")
         self.cal_hysteresis=self.field(calibrate,1,"Max raw-count disagreement", "16")
         self.cal_text=tk.StringVar(value="Uncouple the motor from the mechanism. Configure and save drive settings, reboot, enable external EN, and keep motor output disabled. A calibration sweep invalidates the mechanical reference. No flash is written.")
         ttk.Button(calibrate,text="Start two-direction sweep",command=self.start_calibration).grid(row=2,column=0,sticky="w",pady=6)
         ttk.Button(calibrate,text="Stop calibration",command=self.stop_calibration).grid(row=2,column=1,sticky="w")
         ttk.Button(calibrate,text="Export generated LUT",command=self.export_calibration).grid(row=3,column=0,sticky="w")
-        ttk.Label(calibrate,textvariable=self.cal_text,justify="left",wraplength=850).grid(row=4,column=0,columnspan=3,sticky="w",pady=12)
+        ttk.Button(calibrate,text="Program generated LUT",command=self.start_lut).grid(row=3,column=1,sticky="w")
+        ttk.Button(calibrate,text="Abort LUT programming",command=self.abort_lut).grid(row=4,column=0,sticky="w")
+        self.lut_progress=ttk.Progressbar(calibrate,maximum=32768,length=280)
+        self.lut_progress.grid(row=4,column=1,sticky="w")
+        ttk.Label(calibrate,textvariable=self.cal_text,justify="left",wraplength=850).grid(row=5,column=0,columnspan=3,sticky="w",pady=12)
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(50, self.pump)
         self.next_poll = 0
@@ -185,7 +191,7 @@ class Studio:
         self.done, self.quiet = done, quiet
 
     def disable(self):
-        self.cal_active=False;self.cal_need_step=False
+        self.cal_active=False;self.cal_need_step=False;self.lut_active=False
         self.submit(lambda c: c.write(p.DISABLE), urgent=True)
 
     def reset_captures(self, _):
@@ -215,10 +221,13 @@ class Studio:
         self.connected = True; self.snapshot = None; self.history.clear()
         self.trials.clear(); self.trial_pending = None
         self.cal_active=False;self.cal_need_step=False;self.cal_sweep=None
+        self.lut_active=False;self.lut_transfer=None;self.lut_progress["value"]=0
         self.trial_text.set('No comparison trials for this connection.')
         self.message.set("Connected. No motor commands sent.")
 
     def disconnect(self):
+        if self.lut_active:
+            self.abort_lut();return
         if self.cal_active:
             self.stop_calibration();self.message.set("Calibration stop requested; verify output before disconnecting.");return
         if not self.connected or self.future is not None:
@@ -260,6 +269,10 @@ class Studio:
                 if done: done(value)
             except Exception as exc:
                 failed = True
+                if self.lut_active:
+                    self.lut_active=False
+                    self.cal_text.set("LUT transfer interrupted: "+str(exc)+". Calibration may be invalid; inspect and restart from the beginning. No write retried.")
+                    self.pending=(lambda c:c.write(p.LUT_ABORT),None,True)
                 if self.cal_active:
                     self.cal_active=False;self.cal_need_step=False
                     self.cal_text.set("Calibration interrupted: "+str(exc)+". Verify output independently.")
@@ -277,6 +290,9 @@ class Studio:
                     self.connected = False
                 else:
                     self.worker.shutdown(wait=False); self.root.destroy(); return
+        elif self.connected and self.future is None and self.lut_active:
+            transfer=self.lut_transfer
+            self.submit(lambda c:transfer.advance(c),self.lut_advance,True)
         elif self.connected and self.future is None and time.monotonic() >= self.next_poll:
             self.next_poll = time.monotonic() + 0.25
             if self.cal_active:
@@ -300,7 +316,7 @@ class Studio:
         self.draw_graph()
 
     def start_calibration(self):
-        if not self.connected or self.cal_active or self.pending is not None or self.future is not None and not self.quiet:
+        if not self.connected or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
             self.message.set("Connect and wait for the current operation.");return
         try:
             current=int(self.cal_current.get()); sweep=Sweep(int(self.cal_hysteresis.get()))
@@ -319,7 +335,7 @@ class Studio:
         self.cal_need_step=self.cal_sweep.accept(status)
         if self.cal_sweep.lut is not None:
             self.cal_active=False
-            self.cal_text.set("Sweep complete; output disabled. Maximum disagreement: {} raw counts. Export the generated LUT. Board flash has not been changed.".format(self.cal_sweep.peak))
+            self.cal_text.set("Sweep complete; output disabled. Maximum disagreement: {} raw counts. Export or program the generated LUT. Board flash has not been changed.".format(self.cal_sweep.peak))
         else:
             self.cal_text.set("Collecting calibration knot {} / 400. Motor energized; use independent hardware stop if necessary.".format(status[0]))
 
@@ -337,6 +353,31 @@ class Studio:
                 with open(path,"wb") as f:f.write(self.cal_sweep.lut)
             except OSError as exc:self.message.set(str(exc));return
             self.message.set("Calibration LUT exported. Not programmed to the controller.")
+
+    def start_lut(self):
+        if not self.connected or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
+            self.message.set("Connect and wait for the current operation.");return
+        if self.cal_sweep is None or self.cal_sweep.lut is None:
+            self.message.set("Complete a valid sweep on this controller first.");return
+        if not messagebox.askyesno("Replace calibration LUT","This replaces the board-specific lookup table. Keep a full original flash backup and recovery programmer. Disable external EN, keep the motor uncoupled and do not remove power. Restore the original backup before returning to factory or older firmware. Continue?"):
+            return
+        self.lut_transfer=LutTransfer(self.cal_sweep.lut);self.lut_active=True
+        self.lut_progress["value"]=0
+        self.cal_text.set("Programming calibration. Output must remain disabled.")
+
+    def lut_advance(self,result):
+        if not self.lut_active:return
+        count,done=result;self.lut_progress["value"]=count
+        if done:
+            self.lut_active=False
+            self.cal_text.set("Calibration programmed and verified. Reboot the controller with EN inactive to validate the new table. Mechanical reference is invalid until confirmed.")
+        else:
+            self.cal_text.set("Programming LUT: {} / 32768 bytes acknowledged. Keep power on and EN inactive.".format(count))
+
+    def abort_lut(self):
+        self.lut_active=False
+        self.submit(lambda c:c.write(p.LUT_ABORT),urgent=True)
+        self.cal_text.set("Abort requested. A partial table remains invalid; restart programming from the beginning.")
 
     def show_calibration(self, data):
         winding, jump, forward, reverse, flat, flags = data
@@ -448,6 +489,7 @@ class Studio:
         if self.connected and not messagebox.askyesno("Exit", "Exiting does not stop the motor. Continue?"):
             return
         if self.cal_active:self.stop_calibration()
+        if self.lut_active:self.abort_lut()
         self.closing = True
 
 

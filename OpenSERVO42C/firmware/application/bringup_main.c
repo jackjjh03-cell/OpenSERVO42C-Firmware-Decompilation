@@ -1,5 +1,5 @@
 /* Shared acquisition and motor-runtime application. Motor runtime is a
- * separate, unvalidated bench build. No identity or LUT writes. */
+ * separate, unvalidated bench build. Identity and factory metadata are read only. */
 #include "board.h"
 #include "bringup.h"
 #include "encoder.h"
@@ -15,6 +15,7 @@
 #include "trace.h"
 #include "oled.h"
 #include "calibration_sweep.h"
+#include "calibration_upload.h"
 #ifndef OS_MOTOR_RUNTIME
 #define OS_MOTOR_RUNTIME 0
 #endif
@@ -53,6 +54,7 @@ static void read_encoder(void){
 static uint32_t position_adc;
 static os_trace trace;
 static os_cal_sweep sweep;
+static os_lut_upload upload;
 static os_timing_stat timing[3]; /* current, position, foreground commands */
 static uint32_t timing_start(void){(void)REG(0xe000e010u);return REG(0xe000e018u);}
 static bool timing_end(unsigned index,uint32_t start){
@@ -150,23 +152,38 @@ void os_target_panic(void){
 /* Runs only with output disabled. Pause IRQs and
  * DMA during flash activity; the session invalidates the mechanical reference. */
 static size_t storage_request(const uint8_t *in,size_t n,uint8_t *out){
-    if(in[4]!=OS_SAVE_SETTINGS||n!=8u||!os_frame_valid(in,n))
-        return os_storage_dispatch(&session,&run,&store,false,in,n,out);
+    bool lut=false;
+#if OS_MOTOR_RUNTIME
+    lut=in[4]>=OS_LUT_BEGIN&&in[4]<=OS_LUT_FINISH;
+#endif
+    if(!os_frame_valid(in,n))return 0;
+    if(!lut&&(in[4]!=OS_SAVE_SETTINGS||n!=8u))return os_storage_dispatch(&session,&run,&store,false,in,n,out);
     uint32_t m=lock();
     bool en=input_enabled();
-    if(en||run.enable||run.teaching||run.gate.enabled||run.drive.control.state!=OS_OFF||run.drive.pending_fault||uart.tx_len){
-        unlock(m);return os_storage_dispatch(&session,&run,&store,false,in,n,out);
-    }
+    bool allowed=!en&&!run.enable&&!run.teaching&&!run.gate.enabled&&!run.drive.pending_fault&&!uart.tx_len;
+    if(lut)allowed=allowed&&run.drive.control.state!=OS_ACTIVE&&!(run.drive.control.faults&~(uint32_t)(OS_F_ENCODER|OS_F_REFERENCE));
+    else allowed=allowed&&os_setup_allowed(&run.drive.control);
+    if(!allowed){unlock(m);out[6]=OS_REJECTED;return os_frame_reply(in,out,1);}
+
     os_gate_close(&run.gate,&io);flash.write_permitted=true;
     if(!os_flash_prepare_timing(&flash,bench.core_hz)){
-        flash.write_permitted=false;unlock(m);return os_storage_dispatch(&session,&run,&store,false,in,n,out);
+        flash.write_permitted=false;if(!os_flash_idle(&flash))os_target_panic();unlock(m);out[6]=OS_REJECTED;return os_frame_reply(in,out,1);
     }
     #if OS_MOTOR_RUNTIME
     trace.running=false;
     #endif
     REG(0xe000e010u)=0;REG(0xe000e180u)=1u<<4;
     REG(0x40000c0cu)&=~1u;os_feedback_dma_stop(&io);
-    size_t len=os_storage_dispatch(&session,&run,&store,true,in,n,out);
+    size_t len;
+#if OS_MOTOR_RUNTIME
+    if(lut){
+        run.reference_confirmed=false;run.drive.control.latest.reference_valid=false;run.drive.control.position_lost=true;
+        run.drive.control.healthy_ms=0;run.drive.phase_valid=false;run.adc_good=false;run.tick_seen=false;
+        os_encoder_reset(&run.drive.encoder);
+        len=os_lut_dispatch(&upload,&session,&flash,&store,&calibration,(const uint16_t *)(uintptr_t)0x8000u,true,in,n,out);
+    }else
+#endif
+    len=os_storage_dispatch(&session,&run,&store,true,in,n,out);
     flash.write_permitted=false;
     if(!os_flash_idle(&flash))os_target_panic();
     adc_valid=false;REG(0xe000e280u)=1u<<4;
@@ -244,6 +261,18 @@ void os_target_main(void){
                     len=os_frame_reply(in,out,1);
                 }else len=0;
             }
+            else if(in[4]>=OS_LUT_BEGIN&&in[4]<=OS_LUT_ABORT){
+                if(in[4]>=OS_LUT_STATUS)len=os_lut_dispatch(&upload,&session,&flash,&store,&calibration,0,false,in,n,out);
+                else if(status==OS_BOARD_OK)len=storage_request(in,n,out);
+                else if(os_frame_valid(in,n)){out[6]=OS_REJECTED;len=os_frame_reply(in,out,1);}else len=0;
+            }
+            else if(upload.active&&in[4]!=OS_GET_BENCH){
+                if(os_frame_valid(in,n)){
+                    if(in[4]==OS_DISABLE&&!in[5]){upload.active=false;os_run_disable(&run,&io);out[6]=OS_OK;}
+                    else out[6]=OS_REJECTED;
+                    len=os_frame_reply(in,out,1);
+                }else len=0;
+            }
             else if(in[4]>=OS_TRACE_START&&in[4]<=OS_TRACE_READ)len=os_trace_dispatch(&trace,in,n,out);
             else if(in[4]==30u)len=timing_reply(in,n,out);
             else
@@ -256,7 +285,7 @@ void os_target_main(void){
             if(status==OS_BOARD_OK){service_enable_edge();os_run_enable(&run,&io,input_enabled());}
             if(len)(void)os_uart_send(&uart,&io,out,len);
             /* Save pauses SysTick, so do not mix flash maintenance with command timing. */
-            if(in[4]!=OS_SAVE_SETTINGS&&timing_end(2,start)&&run.gate.enabled)timing_trip();
+            if(in[4]!=OS_SAVE_SETTINGS&&!(in[4]>=OS_LUT_BEGIN&&in[4]<=OS_LUT_FINISH)&&timing_end(2,start)&&run.gate.enabled)timing_trip();
             unlock(m);
 #else
             if(len){m=lock();(void)os_uart_send(&uart,&io,out,len);unlock(m);}

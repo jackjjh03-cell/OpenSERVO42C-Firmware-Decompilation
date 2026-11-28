@@ -30,21 +30,35 @@ static bool finish(os_flash *f){
     key(f);W(FLAGS,0);
     return mode(f,0);
 }
-static bool erase(void *ctx,unsigned slot){
-    os_flash *f=ctx;if(slot>1u||!begin(f,2))return false;
-    f->erase_trigger(f->ctx,base(slot));if(!finish(f))return false;
-    for(unsigned i=0;i<OS_SETTINGS_PAGE;i++)if(f->read_byte(f->ctx,base(slot)+i)!=255u)return false;
+static bool erase_addr(os_flash *f,uint32_t a){
+    if(!begin(f,2))return false;
+    f->erase_trigger(f->ctx,a);if(!finish(f))return false;
+    for(unsigned i=0;i<OS_SETTINGS_PAGE;i++)if(f->read_byte(f->ctx,a+i)!=255u)return false;
     return true;
 }
-static bool program(void *ctx,unsigned slot,unsigned off,uint16_t v){
-    os_flash *f=ctx;if(slot>1u||off>=OS_SETTINGS_PAGE-1u||(off&1u)||!permitted(f)||!idle(f))return false;
-    uint32_t a=base(slot)+off;
+static bool program_addr(os_flash *f,uint32_t a,uint16_t v){
+    if(!permitted(f)||!idle(f))return false;
     uint16_t old=(uint16_t)(f->read_byte(f->ctx,a)|((uint16_t)f->read_byte(f->ctx,a+1u)<<8));
     if((old&v)!=v)return false;
     if(old==v)return true;
     if(!begin(f,1))return false;
     f->program_halfword(f->ctx,a,v);if(!finish(f))return false;
     return f->read_byte(f->ctx,a)==(uint8_t)v&&f->read_byte(f->ctx,a+1u)==(uint8_t)(v>>8);
+}
+static bool erase(void *ctx,unsigned slot){return slot<2u&&erase_addr(ctx,base(slot));}
+static bool program(void *ctx,unsigned slot,unsigned off,uint16_t v){
+    return slot<2u&&off<OS_SETTINGS_PAGE-1u&&!(off&1u)&&program_addr(ctx,base(slot)+off,v);
+}
+bool os_flash_lut_write(os_flash *f,uint16_t offset,const uint8_t *data){
+    /* Offset in halfwords, one sequential 32-byte chunk. No other address is accepted. */
+    if(offset>=16384u||(offset&15u)||!data||!permitted(f))return false;
+    uint32_t a=0x8000u+2u*offset;
+    if(!(offset&255u)&&!erase_addr(f,a))return false;
+    for(unsigned i=0;i<16u;i++){
+        uint16_t v=(uint16_t)(data[2u*i]|((uint16_t)data[2u*i+1u]<<8));
+        if(!program_addr(f,a+2u*i,v))return false;
+    }
+    return true;
 }
 os_settings_io os_flash_settings_io(os_flash *f){return (os_settings_io){f,read_page,erase,program};}
 
