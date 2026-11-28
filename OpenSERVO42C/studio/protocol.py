@@ -70,3 +70,6 @@ STORAGE_DATA = struct.Struct("<BBI")
 
 GET_DRIVE, SET_DRIVE = range(28, 30)
 DRIVE_DATA = struct.Struct("<5HBBHB")
+
+GET_TIMING = 30
+TIMING_DATA = struct.Struct("<6I") # peak core clocks, observed overruns, per loop

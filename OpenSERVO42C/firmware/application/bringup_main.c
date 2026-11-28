@@ -10,6 +10,7 @@
 #include "settings_session.h"
 #include "settings_flash.h"
 #include "run_protocol.h"
+#include "timing.h"
 #ifndef OS_MOTOR_RUNTIME
 #define OS_MOTOR_RUNTIME 0
 #endif
@@ -36,6 +37,23 @@ static void read_encoder(void){
 }
 #if OS_MOTOR_RUNTIME
 static uint32_t position_adc;
+static os_timing_stat timing[3]; /* current, position, foreground commands */
+static uint32_t timing_start(void){(void)REG(0xe000e010u);return REG(0xe000e018u);}
+static bool timing_end(unsigned index,uint32_t start){
+    bool wrapped=(REG(0xe000e010u)&0x10000u)!=0u;
+    uint32_t end=REG(0xe000e018u);
+    return os_timing_record(&timing[index],REG(0xe000e014u)+1u,start,end,wrapped);
+}
+static size_t timing_reply(const uint8_t *in,size_t n,uint8_t *out){
+    if(!os_frame_valid(in,n))return 0;
+    out[6]=OS_OK;
+    if(in[5]){out[6]=OS_BAD_LENGTH;return os_frame_reply(in,out,1);}
+    for(unsigned i=0;i<3;i++){
+        os_wire_put32(out+7u+8u*i,timing[i].peak);
+        os_wire_put32(out+11u+8u*i,timing[i].overruns);
+    }
+    return os_frame_reply(in,out,25);
+}
 static void service_enable_edge(void){
     if(os_board_enable_irq_take(&io))os_run_enable_edge(&run,&io,input_enabled());
 }
@@ -64,6 +82,9 @@ static uint32_t clock_hz(void){
     return 0;
 }
 void current_irq(void){
+#if OS_MOTOR_RUNTIME
+    uint32_t start=timing_start();
+#endif
     /* Read completed DMA words before clearing the completion flags. */
     if(((REG(0x40021014u)>>16)&7u)==5u){
         __asm volatile("dmb":::"memory");
@@ -80,13 +101,15 @@ void current_irq(void){
                (uint16_t)sample.scale,(uint16_t)sample.slot2,(uint16_t)sample.slot1);
     /* If another conversion has already completed, the current loop has no
      * execution margin. Never continue driving with a known backlog. */
-    if(run.gate.enabled&&((REG(0x40021014u)>>16)&7u)!=0u)timing_trip();
+    bool late=timing_end(0,start);
+    if(run.gate.enabled&&(late||((REG(0x40021014u)>>16)&7u)!=0u))timing_trip();
 #endif
 }
 void systick_irq(void){
     ticks++;
 #if OS_MOTOR_RUNTIME
     if(!run.drive.configured)return;
+    uint32_t start=timing_start();
     service_enable_edge();
     bool fresh=run.adc_count!=position_adc;position_adc=run.adc_count;
     bench.ms=ticks;bench.adc_samples=adc_samples;bench.adc_errors=adc_errors;
@@ -96,6 +119,7 @@ void systick_irq(void){
     os_run_tick(&run,&io,ticks,bench.cal_angle,fresh&&(bench.flags&1u)!=0u,bench.pulse,input_enabled(),false,false);
     bench.missed_ticks=run.missed_ticks;
     os_hc32_indicator(run.drive.control.state==OS_FAULT);
+    if(timing_end(1,start)&&run.gate.enabled)timing_trip();
 #endif
 }
 void uart_irq(void){os_uart_irq(&uart,&io,ticks);}
@@ -183,19 +207,21 @@ void os_target_main(void){
         if(n){size_t len;
 #if OS_MOTOR_RUNTIME
             m=lock();
-            (void)REG(0xe000e010u);uint32_t start=REG(0xe000e018u);
+            uint32_t start=timing_start();
             if(status==OS_BOARD_OK){service_enable_edge();os_run_enable(&run,&io,input_enabled());}
+#endif
+#if OS_MOTOR_RUNTIME
+            if(in[4]==30u)len=timing_reply(in,n,out);
+            else
 #endif
             if(status==OS_BOARD_OK && in[4]>=OS_GET_STORAGE && in[4]<=OS_SET_DRIVE)len=storage_request(in,n,out);
             else if(status==OS_BOARD_OK&&in[4]!=OS_GET_BENCH)len=os_run_dispatch(&run,&io,in,n,out);
             else len=os_bench_dispatch(&run.drive.control,&bench,in,n,out);
 #if OS_MOTOR_RUNTIME
             if(status==OS_BOARD_OK){service_enable_edge();os_run_enable(&run,&io,input_enabled());}
-            uint32_t end=REG(0xe000e018u),csr=REG(0xe000e010u);
-            /* COUNTFLAG plus the down-counter detects at least one whole ms
-             * spent masked. Flash maintenance runs only with output off. */
-            if(run.gate.enabled&&(csr&0x10000u)&&end<=start)timing_trip();
             if(len)(void)os_uart_send(&uart,&io,out,len);
+            /* Save pauses SysTick, so do not mix flash maintenance with command timing. */
+            if(in[4]!=OS_SAVE_SETTINGS&&timing_end(2,start)&&run.gate.enabled)timing_trip();
             unlock(m);
 #else
             if(len){m=lock();(void)os_uart_send(&uart,&io,out,len);unlock(m);}

@@ -1,4 +1,5 @@
 #include "run_protocol.h"
+#include "timing.h"
 #include <assert.h>
 #include <stdio.h>
 static const os_drive_config cfg={16,1000,500,2048,300,25,false,600};
@@ -114,5 +115,11 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     tick(&r,&io,100,true);assert(r.drive.control.state==OS_OFF);
     tick(&r,&io,101,true);assert(!r.gate.enabled);
     assert(os_run_arm(&r,&io));
+    os_timing_stat stats={0};
+    assert(!os_timing_record(&stats,48000,2000,1000,false)&&stats.peak==1000);
+    assert(!os_timing_record(&stats,48000,100,47900,true)&&stats.peak==1000);
+    assert(os_timing_record(&stats,48000,2000,1000,true)&&stats.peak==49000&&stats.overruns==1);
+    assert(!os_timing_record(&stats,48000,100,47900,false)&&stats.overruns==1);
+    stats.overruns=UINT32_MAX;assert(os_timing_record(&stats,48000,1000,1000,true)&&stats.overruns==UINT32_MAX);
     puts("scheduler tests passed");return 0;
 }
