@@ -17,3 +17,11 @@ set_tests_properties(protocol_python PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRE
 add_executable(motion_tests tests/motion_tests.c)
 target_link_libraries(motion_tests PRIVATE openservo)
 add_test(NAME motion_pid COMMAND motion_tests)
+
+add_executable(integration_tests tests/integration_tests.c)
+target_link_libraries(integration_tests PRIVATE openservo)
+add_test(NAME controller_integration COMMAND integration_tests)
+add_executable(wire_fixture tests/wire_fixture.c)
+target_link_libraries(wire_fixture PRIVATE openservo)
+add_test(NAME wire_roundtrip COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/tests/wire_roundtrip.py" $<TARGET_FILE:wire_fixture>)
+set_tests_properties(wire_roundtrip PROPERTIES TIMEOUT 15)

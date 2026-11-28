@@ -17,15 +17,21 @@ static void encode_cfg(uint8_t *p,const os_config *v){
     put32(p+8,v->stall_speed_counts_s);put16(p+12,v->stall_load_permille);
     put16(p+14,v->dwell_ms);put16(p+16,v->clear_ms);p[18]=v->policy;
 }
+static void encode_pid(uint8_t *p,const os_pid_config *v){
+    put32(p,v->kp);put32(p+4,v->ki);put32(p+8,v->kd);put32(p+12,v->deadband);put16(p+16,v->output_limit);
+}
+static void encode_motion(uint8_t *p,const os_motion_config *v){
+    put32(p,v->speed);put32(p+4,v->accel);put32(p+8,v->decel);put32(p+12,v->jerk);p[16]=v->curve;
+}
 size_t os_dispatch(os_controller *c,const uint8_t *in,size_t n,uint8_t *out){
     if(n<8u || in[0]!=0xa5u || in[1]!=0x5au || in[2]!=OS_PROTO_VERSION ||
        in[5]>OS_MAX_PAYLOAD || n!=8u+in[5] ||
        get16(in+n-2)!=os_crc16(in+2,n-4)) return 0;
     uint8_t len=1u, *p=out+6;
     p[0]=OS_OK;
-    if(in[4]!=OS_SET_CONFIG && in[5]!=0u) p[0]=OS_BAD_LENGTH;
+    if(in[4]!=OS_SET_CONFIG && in[4]!=OS_SET_PID && in[4]!=OS_SET_MOTION && in[5]!=0u) p[0]=OS_BAD_LENGTH;
     else switch(in[4]){
-    case OS_HELLO: p[1]=0; p[2]=1; p[3]=0; p[4]=0; len=5; break; /* no hardware capabilities */
+    case OS_HELLO: p[1]=0; p[2]=1; p[3]=1; p[4]=0; len=5; break; /* no hardware capabilities */
     case OS_STATUS:
         p[1]=(uint8_t)c->state; p[2]=(uint8_t)c->mode;
         put32(p+3,c->faults);put32(p+7,c->observed);put32(p+11,c->warnings);
@@ -41,6 +47,21 @@ size_t os_dispatch(os_controller *c,const uint8_t *in,size_t n,uint8_t *out){
         break;
     case OS_DISABLE: os_disable(c);break;
     case OS_ACK: if(!os_acknowledge(c))p[0]=OS_REJECTED;break;
+    case OS_GET_PID: encode_pid(p+1,&c->pid_cfg);len=19;break;
+    case OS_SET_PID:
+        if(in[5]!=18u){p[0]=OS_BAD_LENGTH;break;}
+        {const uint8_t *q=in+6;os_pid_config v={get32(q),get32(q+4),get32(q+8),get32(q+12),get16(q+16)};
+         if(!os_set_pid(c,&v))p[0]=OS_REJECTED;}
+        break;
+    case OS_GET_MOTION: encode_motion(p+1,&c->motion_cfg);len=18;break;
+    case OS_SET_MOTION:
+        if(in[5]!=17u){p[0]=OS_BAD_LENGTH;break;}
+        {const uint8_t *q=in+6;os_motion_config v={get32(q),get32(q+4),get32(q+8),get32(q+12),q[16]};
+         if(!os_set_motion(c,&v))p[0]=OS_REJECTED;}
+        break;
+    case OS_GET_CONTROL:
+        put32(p+1,(uint32_t)c->demand);put32(p+5,c->motion.elapsed_ms);put32(p+9,c->motion.total_ms);
+        p[13]=(uint8_t)c->moving;len=14;break;
     default:p[0]=OS_UNSUPPORTED;break;
     }
     out[0]=0xa5;out[1]=0x5a;out[2]=OS_PROTO_VERSION;out[3]=in[3];

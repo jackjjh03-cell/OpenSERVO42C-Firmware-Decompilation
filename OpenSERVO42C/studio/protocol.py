@@ -4,8 +4,12 @@ SYNC = b"\xa5\x5a"
 VERSION = 1
 MAX_PAYLOAD = 48
 HELLO, STATUS, GET_CONFIG, SET_CONFIG, DISABLE, ACK = range(1, 7)
+GET_PID, SET_PID, GET_MOTION, SET_MOTION, GET_CONTROL = range(7, 12)
 CONFIG = struct.Struct("<IIIHHHB")
 STATUS_DATA = struct.Struct("<BBIIIiiiHB")
+PID_CONFIG = struct.Struct("<IIIIH")
+MOTION_CONFIG = struct.Struct("<IIIIB")
+CONTROL_DATA = struct.Struct("<iIIB")
 
 def crc16(data):
     crc = 0xffff

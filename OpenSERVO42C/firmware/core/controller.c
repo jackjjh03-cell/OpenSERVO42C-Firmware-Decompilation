@@ -6,10 +6,15 @@ static uint32_t magnitude(int64_t n) {
 static uint16_t dwell(uint16_t n, bool condition) {
     return !condition ? 0u : n==UINT16_MAX ? n : (uint16_t)(n+1u);
 }
+static void stop_demand(os_controller *c){
+    c->demand=0;c->moving=false;c->still_ms=0;os_pid_reset(&c->pid);
+}
 void os_init(os_controller *c) {
     *c=(os_controller){0};
     /* Simulation defaults only: never interpret as validated motor limits. */
     c->cfg=(os_config){4096,2048,100,800,100,100,OS_MONITOR};
+    c->pid_cfg=(os_pid_config){4096,0,0,2,8000};
+    c->motion_cfg=(os_motion_config){10000,30000,15000,60000,OS_S_CURVE};
     c->state=OS_OFF;
 }
 bool os_config_valid(const os_config *v) {
@@ -21,6 +26,14 @@ bool os_configure(os_controller *c,const os_config *v) {
     if(c->state==OS_ACTIVE || c->state==OS_FAULT || !os_config_valid(v)) return false;
     c->cfg=*v; c->stall_ms=0; c->follow_ms=0; c->healthy_ms=0; return true;
 }
+bool os_set_pid(os_controller *c,const os_pid_config *v){
+    if(c->state!=OS_OFF || !os_pid_config_valid(v))return false;
+    c->pid_cfg=*v;os_pid_reset(&c->pid);return true;
+}
+bool os_set_motion(os_controller *c,const os_motion_config *v){
+    if(c->state!=OS_OFF || !os_motion_config_valid(v))return false;
+    c->motion_cfg=*v;return true;
+}
 bool os_select_mode(os_controller *c, os_mode m) {
     if(c->state!=OS_OFF || m<OS_CNC || m>OS_OPEN_LOOP) return false;
     c->mode=m; return true;
@@ -28,22 +41,44 @@ bool os_select_mode(os_controller *c, os_mode m) {
 bool os_arm(os_controller *c) {
     if(c->state!=OS_OFF || !c->hal_validated || c->faults ||
        c->position_lost || !c->latest.feedback_valid || !c->latest.enable_input ||
-       c->observed || c->healthy_ms<c->cfg.clear_ms || c->mode==OS_TORQUE) return false;
+       c->observed || c->healthy_ms<c->cfg.clear_ms ||
+       (c->mode!=OS_CNC && c->mode!=OS_POSITION) ||
+       (c->mode==OS_POSITION && !c->latest.reference_valid)) return false;
+    stop_demand(c);c->command=c->latest.actual;c->motion=(os_motion){0};
     c->state=OS_ACTIVE; return true;
 }
 void os_disable(os_controller *c) {
+    stop_demand(c);
     if(c->state!=OS_FAULT) c->state=OS_OFF;
 }
+bool os_start_move(os_controller *c,int32_t end){
+    if(c->state!=OS_ACTIVE || c->mode!=OS_POSITION || c->moving ||
+       !c->latest.reference_valid || !c->latest.feedback_valid || !c->latest.enable_input ||
+       c->latest.travel_violation || c->latest.speed_counts_s!=0 ||
+       magnitude((int64_t)c->command-c->latest.actual)>c->pid_cfg.deadband)return false;
+    if(!os_motion_plan(&c->motion,c->command,end,&c->motion_cfg))return false;
+    c->moving=c->motion.total_ms!=0;return true;
+}
 void os_tick_1ms(os_controller *c,const os_sample *s) {
-    c->latest=*s;
-    uint32_t critical=s->critical & OS_CRITICAL;
-    if(!s->feedback_valid) critical|=OS_F_ENCODER;
-    uint32_t error=magnitude((int64_t)s->target-s->actual);
+    os_sample sample=*s;
+    uint32_t critical=sample.critical & OS_CRITICAL;
+    if(!sample.feedback_valid) critical|=OS_F_ENCODER;
+    if(c->state==OS_ACTIVE && c->mode==OS_POSITION){
+        if(!sample.reference_valid)critical|=OS_F_REFERENCE;
+        if(!critical && sample.enable_input && c->moving){
+            c->command=os_motion_tick(&c->motion);
+            c->moving=c->motion.elapsed_ms<c->motion.total_ms;
+        }
+        sample.target=c->command;
+    }
+    bool unchanged=sample.target==c->latest.target;
+    c->latest=sample;
+    uint32_t error=magnitude((int64_t)sample.target-sample.actual);
     bool stall=error>=c->cfg.stall_error_counts &&
-        magnitude(s->speed_counts_s)<=c->cfg.stall_speed_counts_s &&
-        s->load_permille>=c->cfg.stall_load_permille;
+        magnitude(sample.speed_counts_s)<=c->cfg.stall_speed_counts_s &&
+        sample.load_permille>=c->cfg.stall_load_permille;
     bool follow=error>=c->cfg.following_counts;
-    bool travel=s->reference_valid && s->travel_violation;
+    bool travel=sample.reference_valid && sample.travel_violation;
     c->stall_ms=dwell(c->stall_ms,c->state==OS_ACTIVE && stall);
     c->follow_ms=dwell(c->follow_ms,c->state==OS_ACTIVE && follow);
     uint32_t noncritical=(c->stall_ms>=c->cfg.dwell_ms?OS_F_STALL:0u) |
@@ -55,11 +90,16 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
     uint32_t trip=critical;
     if(c->state==OS_ACTIVE && c->cfg.policy==OS_PROTECT) trip|=noncritical;
     if(trip) {
-        if(c->state!=OS_FAULT) c->fault_sample=*s;
+        if(c->state!=OS_FAULT) c->fault_sample=sample;
         c->faults|=trip;
         if(c->state==OS_ACTIVE || (trip&OS_CRITICAL)) c->position_lost=true;
-        c->state=OS_FAULT;
-    } else if(!s->enable_input) os_disable(c);
+        c->state=OS_FAULT;stop_demand(c);
+    } else if(!sample.enable_input) os_disable(c);
+    else if(c->state==OS_ACTIVE){
+        c->still_ms=dwell(c->still_ms,unchanged && !c->moving);
+        bool stationary=c->still_ms>=100u && magnitude(sample.speed_counts_s)<=c->cfg.stall_speed_counts_s;
+        c->demand=os_pid_step(&c->pid,&c->pid_cfg,sample.target,sample.actual,stationary);
+    } else stop_demand(c);
 }
 bool os_acknowledge(os_controller *c) {
     if(c->state!=OS_FAULT || c->latest.enable_input || c->observed ||

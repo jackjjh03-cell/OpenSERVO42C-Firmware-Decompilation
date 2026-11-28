@@ -10,7 +10,14 @@ Frame: A5 5A | version (1) | sequence | opcode | payload length (0..48) | payloa
 | 04 | config | empty; RAM only, rejected while active or faulted |
 | 05 | empty | empty; logical disable |
 | 06 | empty | empty; acknowledgment requires disabled enable input and healthy dwell |
+| 07 | empty | PID config (kp, ki, kd, deadband u32, output limit u16) |
+| 08 | PID config | empty; RAM only, OFF state required |
+| 09 | empty | motion config (speed, accel, decel, jerk u32, curve u8) |
+| 0A | motion config | empty; RAM only, OFF state required |
+| 0B | empty | signed demand i32, elapsed and total ms u32, moving u8 |
 
-Config: following threshold u32 counts, stall error threshold u32 counts, stall speed threshold u32 counts/s, stall load threshold u16 permille, persistence u16 ms, healthy dwell u16 ms, policy u8 (0 monitor, 1 warn, 2 protect). Simulation values only. Critical bits always latch. Travel violation input requires a valid reference. Position loss is not cleared by acknowledgment. Recovery and physical arm are intentionally absent pending hardware validation. State values OFF=0, READY=1 (reserved), ACTIVE=2, FAULT=3. Fault bits: stall 1, following 2, travel 4, encoder 8, electrical 16, timing 32. Mode values CNC=0, position=1, velocity=2, jog=3, torque=4, open loop=5.
+Config: following threshold u32 counts, stall error threshold u32 counts, stall speed threshold u32 counts/s, stall load threshold u16 permille, persistence u16 ms, healthy dwell u16 ms, policy u8 (0 monitor, 1 warn, 2 protect). Simulation values only. Critical bits always latch. Travel violation input requires a valid reference. Position loss is not cleared by acknowledgment. Recovery and physical arm are intentionally absent pending hardware validation. State values OFF=0, READY=1 (reserved), ACTIVE=2, FAULT=3. Fault bits: stall 1, following 2, travel 4, encoder 8, electrical 16, timing 32, lost position reference 64. Mode values CNC=0, position=1, velocity=2, jog=3, torque=4, open loop=5.
 
 Future UART integration must add bounded stream framing, resynchronization, timeouts, address strategy, protocol coexistence, interrupt-safe snapshots, duplicate/retry behavior and hardware ownership. This file does not establish any electrical-level or baud-rate guarantee.
+
+Gains use Q12 per 1 ms sample. Motion configuration uses counts/s, counts/s² and counts/s³; curve 0 = trapezoid, 1 = quintic S-curve. No units in amperes until validated. v0.1.1 adds these commands without changing prior frame layouts. Live gain changes while active and physical arm/move commands are deliberately not exposed yet. A host pipe fixture tests the same C dispatcher used by the firmware core against Studio's Python codec.

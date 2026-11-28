@@ -7,7 +7,8 @@
 #define OS_MAX_PAYLOAD 48u
 #define OS_FRAME_MAX (8u+OS_MAX_PAYLOAD)
 enum { OS_HELLO=1, OS_STATUS=2, OS_GET_CONFIG=3, OS_SET_CONFIG=4,
-       OS_DISABLE=5, OS_ACK=6 };
+       OS_DISABLE=5, OS_ACK=6, OS_GET_PID=7, OS_SET_PID=8, OS_GET_MOTION=9,
+       OS_SET_MOTION=10, OS_GET_CONTROL=11 };
 enum { OS_OK=0, OS_BAD_LENGTH=1, OS_REJECTED=2, OS_UNSUPPORTED=3 };
 uint16_t os_crc16(const uint8_t *p,size_t n);
 /* Complete frame in, response frame out. Returns zero for malformed frame.

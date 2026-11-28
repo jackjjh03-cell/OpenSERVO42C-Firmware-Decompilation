@@ -1,4 +1,4 @@
-# OpenSERVO42C v0.1.0 — development
+# OpenSERVO42C v0.1.1 — development
 Independent firmware for the stock HC32L130F8UA MKS SERVO42C, based on the original V1.1.3 reconstruction in ../development/factory and ../assembly, not R02.
 
 This first increment is a portable controller/protection core and a versioned wire contract, with host tests. It is **not flashable motor firmware**. No register writes, bridge enabling, or validated electrical protection are present. Do not flash or connect this prototype to a live drive.
@@ -13,4 +13,4 @@ Python tests require Python 3.8+ and no external dependencies. Studio's serial t
 
 See [hardware evidence](docs/hardware.md), [protocol](docs/protocol.md), and [development requirements](docs/requirements.md). The original factory project remains unchanged.
 
-The portable [motion and PID modules](docs/motion-and-pid.md) now provide trapezoidal and quintic S-curve position trajectories and a fixed-point position regulator. They are not connected to the motor or the UART yet.
+The portable [motion and PID modules](docs/motion-and-pid.md) now provide trapezoidal and quintic S-curve position trajectories and a fixed-point position regulator. They are integrated with the portable controller and share configuration commands with the Python codec. Physical UART and motor output remain unimplemented.
