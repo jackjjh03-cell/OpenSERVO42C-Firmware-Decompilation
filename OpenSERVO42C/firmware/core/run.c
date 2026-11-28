@@ -21,17 +21,17 @@ void os_run_tick(os_run *r,const os_board_io *io,uint32_t now,uint16_t angle,boo
     if(r->tick_seen&&delta>1u){
         uint32_t missed=delta-1u;
         r->missed_ticks=UINT32_MAX-r->missed_ticks<missed?UINT32_MAX:r->missed_ticks+missed;
-        if(active)trip(r,io,OS_F_TIMING);
+        if(active||r->teaching)trip(r,io,OS_F_TIMING);
         r->drive.control.healthy_ms=0;
     }
     if(r->tick_seen&&r->adc_count==r->last_count){
         r->adc_good=false;
-        if(active)trip(r,io,OS_F_TIMING);
+        if(active||r->teaching)trip(r,io,OS_F_TIMING);
     }
     r->last_count=r->adc_count;r->last_tick=now;r->tick_seen=true;
     os_run_enable(r,io,enable);
     os_drive_position(&r->drive,angle,valid,pulse,enable,(reference||r->reference_confirmed)&&!r->drive.control.position_lost,travel);
-    if(r->drive.control.position_lost)r->reference_confirmed=false;
+    if(r->drive.control.position_lost){r->reference_confirmed=false;r->captured=0;}
     /* Recovery/arming require fresh healthy electrical feedback, even when off. */
     if(!r->adc_good)r->drive.control.healthy_ms=0;
     if(r->drive.control.state!=OS_ACTIVE)close_gate(r,io);
@@ -48,13 +48,41 @@ void os_run_adc(os_run *r,const os_board_io *io,bool enable,bool angle_valid,uin
 }
 bool os_run_confirm_reference(os_run *r,int32_t position){
     const os_limits *l=&r->drive.control.limits;
-    if(r->enable||r->gate.enabled||!r->adc_good||!r->drive.phase_valid||
+    if(r->teaching||r->enable||r->gate.enabled||!r->adc_good||!r->drive.phase_valid||
        (l->enabled&&(position<l->minimum||position>l->maximum))||
        !os_drive_confirm_reference(&r->drive,position,r->drive.encoder.previous,r->drive.previous_pulse))return false;
     r->reference_confirmed=true;return true;
 }
 bool os_run_arm(os_run *r,const os_board_io *io){
-    if(!r->enable||!r->tick_seen||!r->adc_seen||!r->adc_good||r->gate.enabled||!os_drive_arm(&r->drive))return false;
+    if(r->teaching||!r->enable||!r->tick_seen||!r->adc_seen||!r->adc_good||r->gate.enabled||!os_drive_arm(&r->drive))return false;
     if(!os_gate_open(&r->gate,io,true)){trip(r,io,OS_F_ELECTRICAL);os_drive_disable(&r->drive);return false;}
     return true;
 }
+
+static bool teach_ready(const os_run *r){
+    const os_controller *c=&r->drive.control;
+    return r->tick_seen&&r->adc_good&&r->drive.phase_valid&&!r->gate.enabled&&
+        c->state==OS_OFF&&!c->faults&&!r->drive.pending_fault&&!c->position_lost&&
+        c->latest.feedback_valid&&c->latest.reference_valid;
+}
+bool os_run_teach_begin(os_run *r,const os_board_io *io){
+    if(r->teaching||!teach_ready(r))return false;
+    os_run_disable(r,io);r->captured=0;r->teaching=true;return true;
+}
+bool os_run_teach_capture(os_run *r,bool maximum,int32_t *position){
+    if(!r->teaching||!teach_ready(r)||!position||
+       mag(r->drive.control.latest.speed_counts_s)>r->drive.control.cfg.stall_speed_counts_s)return false;
+    *position=r->drive.control.latest.actual;
+    if(maximum){r->taught_max=*position;r->captured|=2u;}
+    else{r->taught_min=*position;r->captured|=1u;}
+    return true;
+}
+bool os_run_teach_apply(os_run *r,uint32_t lower_margin,uint32_t upper_margin){
+    if(!r->teaching||r->captured!=3u||!teach_ready(r))return false;
+    int64_t lo=(int64_t)r->taught_min+lower_margin,hi=(int64_t)r->taught_max-upper_margin;
+    if(lo>=hi||lo<INT32_MIN||hi>INT32_MAX)return false;
+    /* Only this locked, output-disabled setup session can change limits with EN high. */
+    r->drive.control.limits=(os_limits){(int32_t)lo,(int32_t)hi,true};
+    r->drive.control.healthy_ms=0;r->teaching=false;r->captured=0;return true;
+}
+void os_run_teach_cancel(os_run *r){r->teaching=false;r->captured=0;}
