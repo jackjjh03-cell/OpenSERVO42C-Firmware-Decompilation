@@ -93,3 +93,6 @@ target_link_libraries(trace_tests PRIVATE openservo)
 add_test(NAME trace COMMAND trace_tests)
 add_test(NAME studio_tuning COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_tuning.py)
 set_tests_properties(studio_tuning PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_test(NAME studio_tuning_trials COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_tuning_trials.py)
+set_tests_properties(studio_tuning_trials PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
