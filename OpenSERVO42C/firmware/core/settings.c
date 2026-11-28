@@ -36,18 +36,25 @@ static bool decode(const uint8_t *buf,os_settings *s,uint32_t *gen){
     os_drive_config *d=&s->drive;d->microsteps=r16(&p);d->max_encoder_delta=r16(&p);d->phase_limit=r16(&p);d->current_gain_q11=r16(&p);d->compare_limit=r16(&p);d->geometry=*p++;uint8_t reverse=*p++;if(reverse>1u)return false;d->reverse=reverse!=0u;d->trip_limit=r16(&p);s->enable_high=*p++;
     return os_settings_valid(s);
 }
-bool os_settings_load(const os_settings_io *io,os_settings *s,uint32_t *gen,unsigned *slot){
+static bool load(const os_settings_io *io,os_settings *s,uint32_t *gen,unsigned *slot,bool *read_ok){
+    *read_ok=true;
     uint8_t buf[OS_SETTINGS_BYTES];os_settings candidate;uint32_t g;bool found=false;
     for(unsigned i=0;i<2;i++){
-        if(!io->read(io->ctx,i,buf,sizeof buf)||!decode(buf,&candidate,&g))continue;
+        if(!io->read(io->ctx,i,buf,sizeof buf)){*read_ok=false;continue;}
+        if(!decode(buf,&candidate,&g))continue;
         if(!found||(g!=*gen&&(uint32_t)(g-*gen)<0x80000000u)){*s=candidate;*gen=g;*slot=i;found=true;}
     }
     return found;
 }
+bool os_settings_load(const os_settings_io *io,os_settings *s,uint32_t *gen,unsigned *slot){
+    bool read_ok;return load(io,s,gen,slot,&read_ok);
+}
 bool os_settings_save(const os_settings_io *io,const os_settings *s){
     if(!os_settings_valid(s))return false;
     os_settings old;uint32_t g=0;unsigned slot=1;uint8_t buf[OS_SETTINGS_BYTES],check[OS_SETTINGS_BYTES];
-    if(os_settings_load(io,&old,&g,&slot)){
+    bool read_ok;bool found=load(io,&old,&g,&slot,&read_ok);
+    if(!read_ok)return false; /* Never erase when either page cannot be inspected. */
+    if(found){
         encode(buf,s,g);if(io->read(io->ctx,slot,check,sizeof check)){
             unsigned i=0;while(i<sizeof buf&&buf[i]==check[i])i++;if(i==sizeof buf)return true;
         }
