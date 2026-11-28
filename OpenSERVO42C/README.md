@@ -17,4 +17,4 @@ The portable [motion and PID modules](docs/motion-and-pid.md) now provide trapez
 
 The [MT6816 encoder layer](docs/encoder.md) includes a checked SPI decoder, rollover tracker and a separate HC32 register transport awaiting hardware initialization and validation.
 
-[Memory and timing budgets](docs/memory-and-timing.md) · [First powered bench test](docs/bench-validation.md). The new Cortex-M0+ linker layout and synthetic link tests enforce the initial flash and static-RAM targets; the full hardware application has not yet been linked.
+[Memory and timing budgets](docs/memory-and-timing.md) · [First powered bench test](docs/bench-validation.md). The new Cortex-M0+ linker layout and synthetic link tests enforce the initial flash budget and stack boundary; the 4 KiB static-RAM target is advisory; the full hardware application has not yet been linked.

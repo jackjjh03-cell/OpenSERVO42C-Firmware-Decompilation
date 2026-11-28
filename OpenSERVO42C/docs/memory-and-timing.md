@@ -7,13 +7,14 @@ The original V1.1.3 layout (development/factory/layout.ld) reserves all bytes fr
 | Available application flash | 31,232 B |
 | Application image target (vectors, code, constants, data initializers) | 28,672 B |
 | Application flash headroom | 2,560 B |
-| Static SRAM including all buffers and alignment | 4,096 B |
-| Reserved stack | 2,048 B |
-| Unallocated SRAM headroom | 2,048 B |
+| Static SRAM review target (not a hard cap) | 4,096 B |
+| Maximum static SRAM including alignment | 6,144 B |
+| Initial reserved stack | 2,048 B |
+| Additional SRAM headroom | Variable; 0–2,048 B at 4–6 KiB static usage |
 
-These are conservative engineering targets, not actual measurements of the finished application. Changes require review of the map, stack and timing, not silently raising limits. The independent firmware must not link a legacy library that depends on its fixed work-RAM ABI without reconciling the layout first.
+These are engineering targets, not actual measurements of the finished application. Static allocations beyond 4 KiB are permitted and marked for review by the linker symbol __ram_review_required; useful buffers and features may use that space. The hard limit prevents overlap with the initial 2 KiB stack reservation. Review the measured stack peak and worst-case interrupt nesting before changing the stack reservation. Extra RAM does not itself improve CPU execution speed. The independent firmware must not link a legacy library that depends on its fixed work-RAM ABI without reconciling the layout first.
 
-The target linker script enforces these budgets and tests the vector size. Local synthetic Cortex-M0+ linking passed five tests (valid layout, oversized text, flash data initializer overflow, static SRAM overflow and noinit overflow). The CI workflow runs the same checks. This script is a target foundation, not a linked firmware yet. On the full target build, audit every allocated section and load segment, reject unexpected orphan sections, and report both program flash and SRAM use.
+The target linker script enforces the flash budget and stack boundary and tests the vector size. The regression suite now also permits a synthetic allocation above the 4 KiB review target while rejecting allocations that overlap the stack. The CI workflow runs these checks. This script is a target foundation, not a linked firmware yet. On the full target build, audit every allocated section and load segment, reject unexpected orphan sections, and report both program flash and SRAM use, including __ram_static_headroom and __ram_review_required.
 
 ## Resource management
 - No heap allocation, recursive calls or unbounded queues on the MCU.

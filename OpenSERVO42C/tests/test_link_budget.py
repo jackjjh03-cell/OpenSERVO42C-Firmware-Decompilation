@@ -50,15 +50,19 @@ b .
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('28 KiB development budget', result.stderr)
 
+    def test_above_review_target(self):
+        result = self.link(bss=5120)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_static_ram(self):
-        result = self.link(bss=4096)
+        result = self.link(bss=6144)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn('4 KiB development budget', result.stderr)
+        self.assertIn('Static RAM overlaps stack', result.stderr)
 
     def test_noinit_ram(self):
-        result = self.link(bss=4000, noinit=128)
+        result = self.link(bss=6000, noinit=256)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn('4 KiB development budget', result.stderr)
+        self.assertIn('Static RAM overlaps stack', result.stderr)
 
 if __name__ == '__main__':
     unittest.main()
