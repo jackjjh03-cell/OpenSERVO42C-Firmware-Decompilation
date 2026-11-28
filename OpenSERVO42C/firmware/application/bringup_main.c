@@ -1,5 +1,5 @@
 /* First target application: acquisition/communications only, never energizes
- * the bridge. Not a motor-drive release. No identity/settings/LUT writes. */
+ * the bridge. Not a motor-drive release. No identity or LUT writes. Settings writes require maintenance. */
 #include "board.h"
 #include "bringup.h"
 #include "encoder.h"
@@ -55,6 +55,30 @@ void os_target_panic(void){
     if(board_ready){os_hc32_inhibit();os_hc32_indicator(true);}
     for(;;)__asm volatile("wfi");
 }
+/* Runs only in the output-disabled acquisition application. Pause IRQs and
+ * DMA during flash activity; the session invalidates the mechanical reference. */
+static size_t storage_request(const uint8_t *in,size_t n,uint8_t *out){
+    if(in[4]!=OS_SAVE_SETTINGS||n!=8u||in[5]||os_crc16(in+2,4)!=(uint16_t)(in[6]|((uint16_t)in[7]<<8)))
+        return os_storage_dispatch(&session,&run,&store,false,in,n,out);
+    uint32_t m=lock();
+    bool en=((REG(0x40020d44u)&128u)!=0u)==(session.enable_high!=0u);
+    if(en||run.enable||run.teaching||run.gate.enabled||run.drive.control.state!=OS_OFF||run.drive.pending_fault||uart.tx_len){
+        unlock(m);return os_storage_dispatch(&session,&run,&store,false,in,n,out);
+    }
+    os_gate_close(&run.gate,&io);flash.write_permitted=true;
+    if(!os_flash_prepare_timing(&flash,bench.core_hz)){
+        flash.write_permitted=false;unlock(m);return os_storage_dispatch(&session,&run,&store,false,in,n,out);
+    }
+    REG(0xe000e010u)=0;REG(0xe000e180u)=1u<<4;
+    REG(0x40000c0cu)&=~1u;os_feedback_dma_stop(&io);
+    size_t len=os_storage_dispatch(&session,&run,&store,true,in,n,out);
+    flash.write_permitted=false;
+    if(!os_flash_idle(&flash))os_target_panic();
+    adc_valid=false;REG(0xe000e280u)=1u<<4;
+    os_feedback_dma_start(&io,(uint32_t)(uintptr_t)&dma_words);irq_enable(4,0);
+    REG(0xe000ed04u)=1u<<25;REG(0xe000e018u)=0;REG(0xe000e010u)=7u;
+    unlock(m);return len;
+}
 void os_target_main(void){
     io=os_hc32_board_io();os_init(&run.drive.control);
     os_offsets offsets;os_board_result status=os_board_prepare(&io,&offsets);
@@ -104,7 +128,7 @@ void os_target_main(void){
         }else unlock(m);
         m=lock();size_t n=os_uart_take(&uart,in);unlock(m);
         if(n){size_t len;
-            if(status==OS_BOARD_OK && (in[4]==OS_GET_STORAGE||in[4]==OS_SAVE_SETTINGS))len=os_storage_dispatch(&session,&run,&store,false,in,n,out);
+            if(status==OS_BOARD_OK && in[4]>=OS_GET_STORAGE && in[4]<=OS_SET_DRIVE)len=storage_request(in,n,out);
             else if(status==OS_BOARD_OK&&in[4]!=OS_GET_BENCH)len=os_run_dispatch(&run,&io,in,n,out);
             else len=os_bench_dispatch(&run.drive.control,&bench,in,n,out);
             if(len){m=lock();(void)os_uart_send(&uart,&io,out,len);unlock(m);}}

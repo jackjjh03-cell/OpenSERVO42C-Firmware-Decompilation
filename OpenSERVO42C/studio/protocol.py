@@ -67,3 +67,6 @@ RUN_REFERENCE_VALID = 32
 
 GET_STORAGE, SAVE_SETTINGS = range(26, 28)
 STORAGE_DATA = struct.Struct("<BBI")
+
+GET_DRIVE, SET_DRIVE = range(28, 30)
+DRIVE_DATA = struct.Struct("<5HBBHB")

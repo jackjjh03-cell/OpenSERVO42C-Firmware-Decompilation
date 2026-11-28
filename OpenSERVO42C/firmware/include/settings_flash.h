@@ -12,6 +12,9 @@ typedef struct {
     void (*program_halfword)(void *,uint32_t,uint16_t);
     bool write_permitted;
 } os_flash;
+/* Original 48 MHz flash timing table, verified by register readback. */
+bool os_flash_prepare_timing(os_flash *f,uint32_t core_hz);
+bool os_flash_idle(os_flash *f);
 os_settings_io os_flash_settings_io(os_flash *f);
 os_flash os_hc32_settings_flash(void);
 #endif

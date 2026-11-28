@@ -23,4 +23,12 @@ int main(void){mock m={0};memset(m.pages,255,sizeof m.pages);os_board_io b={&m,r
     req[4]=OS_SAVE_SETTINGS;crc=os_crc16(req+2,4);req[6]=(uint8_t)crc;req[7]=(uint8_t)(crc>>8);
     assert(os_storage_dispatch(&s,&r,&io,false,req,8,reply)==9&&reply[6]==OS_REJECTED);
     assert(os_storage_dispatch(&s,&r,&io,true,req,8,reply)==9&&reply[6]==OS_OK&&m.erases==1);
+    req[4]=OS_GET_DRIVE;crc=os_crc16(req+2,4);req[6]=(uint8_t)crc;req[7]=(uint8_t)(crc>>8);
+    assert(os_storage_dispatch(&s,&r,&io,false,req,8,reply)==24&&reply[6]==OS_OK&&reply[7]==16);
+    uint8_t set[23]={0xa5,0x5a,1,10,OS_SET_DRIVE,15,32,0,232,3,244,1,0,8,44,1,25,0,88,2,1,0,0};
+    crc=os_crc16(set+2,19);set[21]=(uint8_t)crc;set[22]=(uint8_t)(crc>>8);
+    r.enable=true;assert(os_storage_dispatch(&s,&r,&io,false,set,23,reply)==9&&reply[6]==OS_REJECTED);r.enable=false;
+    assert(os_storage_dispatch(&s,&r,&io,false,set,23,reply)==9&&reply[6]==OS_OK&&r.drive.cfg.microsteps==32&&s.enable_high==1&&!r.drive.control.hal_validated);
+    set[17]=2;crc=os_crc16(set+2,19);set[21]=(uint8_t)crc;set[22]=(uint8_t)(crc>>8);
+    assert(os_storage_dispatch(&s,&r,&io,false,set,23,reply)==9&&reply[6]==OS_BAD_LENGTH);
     puts("settings session passed");return 0;}

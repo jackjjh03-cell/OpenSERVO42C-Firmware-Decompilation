@@ -47,3 +47,18 @@ static bool program(void *ctx,unsigned slot,unsigned off,uint16_t v){
     return f->read_byte(f->ctx,a)==(uint8_t)v&&f->read_byte(f->ctx,a+1u)==(uint8_t)(v>>8);
 }
 os_settings_io os_flash_settings_io(os_flash *f){return (os_settings_io){f,read_page,erase,program};}
+
+bool os_flash_idle(os_flash *f){return idle(f)&&(R(CTRL)&3u)==0u;}
+bool os_flash_prepare_timing(os_flash *f,uint32_t core_hz){
+    /* Recovered factory scale 12 at 48 MHz; do not extrapolate other clocks. */
+    static const uint32_t coefficients[]={32,23,27,18000,140000,24,240,1000};
+    if(core_hz!=48000000u||!permitted(f)||!idle(f)||!mode(f,0))return false;
+    key(f);W(CTRL,R(CTRL)&~0x200u);
+    if(R(CTRL)&0x200u)return false;
+    for(unsigned i=0;i<8;i++){
+        uint32_t a=0x40020000u+4u*i,v=i==1u?255u:12u*coefficients[i];
+        unsigned tries=255;
+        while(R(a)!=v){if(!tries--)return false;key(f);W(a,v);}
+    }
+    return true;
+}
