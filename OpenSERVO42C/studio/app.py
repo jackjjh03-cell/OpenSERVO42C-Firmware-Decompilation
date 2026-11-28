@@ -180,6 +180,7 @@ class Studio:
         search = ttk.Frame(tabs, padding=12); tabs.add(search,text="Gain search")
         self.search_caps = self.field(search,0,"Upper Kp, Ki, Kd (Q12)","")
         self.search_step = self.field(search,1,"Initial step (% of upper bounds)","10")
+        self.search_repeats = self.field(search,6,"Required runs per gain set (1–10)","2")
         self.search_candidate = None; self.search_rejected = set()
         self.search_text = tk.StringVar(value="Record a baseline in PID trials, then enter reviewed per-gain upper bounds separated by commas. Zero locks that gain at zero. The selected ranking objective is shared with PID trials.")
         ttk.Button(search,text="Suggest next gains to PID editor",command=self.next_gains).grid(row=2,column=0,sticky="w",pady=6)
@@ -535,13 +536,15 @@ class Studio:
         if not messagebox.askyesno("Test move","Command one position move to {} counts with the currently applied gains? Verify clearance and the independent hardware stop.".format(args[0])):
             return
         watch=self.auto_retrieve.get()
+        baseline=self.trials[0] if self.trials else None
+        expected=self.search_candidate if baseline is not None else None
         def started(capture):
             self.trial_pending=capture;self.trial_monitor=watch
             self.trial_text.set("Test move accepted. Wait for trace completion, then disable output. "+("Studio will retrieve automatically." if watch else "Retrieve the trace manually."))
         # Each trial owns a separate cancellation token; a subsequent trial
         # cannot clear a cancellation requested for an older in-flight trial.
         token=Event();self.cancel_trial=token
-        self.submit(lambda c:begin_trial(c,*args,cancelled=token.is_set),started)
+        self.submit(lambda c:begin_trial(c,*args,cancelled=token.is_set,baseline=baseline,expected_gains=expected),started)
 
     def trial_progress(self,capture,result):
         progress,status,run=result
@@ -561,7 +564,9 @@ class Studio:
             rank_trials(self.trials+[trial],self.trial_profile.get())
         except ValueError as exc:
             self.trial_text.set(str(exc)+". Clear comparisons to start a new group.");return
-        self.trials.append(trial);self.trial_pending=None;self.trial_monitor=False;self.show_trials()
+        self.trials.append(trial);self.trial_pending=None;self.trial_monitor=False
+        if self.search_candidate == trial.gains:self.search_candidate=None
+        self.show_trials()
 
     def retrieve_trial(self):
         capture=self.trial_pending
@@ -600,14 +605,14 @@ class Studio:
             self.message.set("Retrieve or clear the pending trial before requesting another candidate.");return
         try:
             caps=tuple(int(v.strip()) for v in self.search_caps.get().split(","))
-            proposal=suggest(self.trials,self.trial_profile.get(),caps,int(self.search_step.get()),self.search_rejected)
+            proposal=suggest(self.trials,self.trial_profile.get(),caps,int(self.search_step.get()),self.search_rejected,int(self.search_repeats.get()))
         except ValueError as exc:
             self.search_text.set(str(exc));return
         self.search_candidate=proposal.candidate
         if proposal.candidate is None:
             self.search_text.set("No untested neighbors remain within the chosen bounds and integer resolution. Best measured Kp/Ki/Kd: {}. This is a local search result, not proof of stability.".format(proposal.best[:3]));return
         self.fill(self.config_vars[1],proposal.candidate)
-        self.search_text.set("Best measured: {}\nNext candidate: {}\nSearch steps: {}\nSkipped: {}\nCandidate copied to PID editor only. Review and apply while disabled, return to the same starting point, then record and retrieve another trial. If the candidate fails, disable output and skip it before continuing.".format(proposal.best[:3],proposal.candidate[:3],proposal.steps,len(self.search_rejected)))
+        self.search_text.set("Best measured: {}\nNext candidate (may repeat a gain set): {}\nSearch steps: {}\nSkipped: {}\nCandidate copied to PID editor only. Review and apply while disabled, return to the same starting point, then record and retrieve another trial. If the candidate fails, disable output and skip it before continuing.".format(proposal.best[:3],proposal.candidate[:3],proposal.steps,len(self.search_rejected)))
 
     def apply_suggested(self):
         candidate=self.search_candidate
@@ -621,8 +626,8 @@ class Studio:
         self.submit(lambda c:apply_trial_gains(c,candidate,baseline),applied)
 
     def skip_gains(self):
-        if self.search_candidate is None or self.search_candidate in {t.gains for t in self.trials}:
-            self.message.set("No unmeasured candidate to skip.");return
+        if self.search_candidate is None:
+            self.message.set("No proposed candidate to skip.");return
         self.search_rejected.add(self.search_candidate);self.search_candidate=None
         self.search_text.set("Candidate excluded from further suggestions. If a trial is pending, retrieve or clear it first. Skipping does not send motor commands.")
 

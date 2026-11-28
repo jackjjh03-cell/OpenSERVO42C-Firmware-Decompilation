@@ -53,6 +53,28 @@ class GainSearchTests(unittest.TestCase):
         with self.assertRaises(ValueError): suggest(rows+[trial((40,0,10,2,500),1,context=((2,),))], 'Balanced',(80,0,20))
         with self.assertRaises(ValueError): suggest([], 'Balanced', (80, 0, 20))
 
+    def test_repeated_measurements_before_search(self):
+        base=trial((40,0,10,2,500),12)
+        rows=[base]
+        self.assertEqual(suggest(rows,'Balanced',(80,0,20),repeats=2).candidate,base.gains)
+        rows.append(base)
+        proposal=suggest(rows,'Balanced',(80,0,20),repeats=2)
+        candidate=trial(proposal.candidate,1)
+        rows.append(candidate)
+        result=suggest(rows,'Balanced',(80,0,20),repeats=2)
+        self.assertEqual(result.best,base.gains)
+        self.assertEqual(result.candidate,candidate.gains)
+        rows.append(trial(candidate.gains,25))
+        self.assertEqual(suggest(rows,'Balanced',(80,0,20),repeats=2).best,base.gains)
+
+    def test_partial_candidate_can_be_skipped(self):
+        base=trial((40,0,10,2,500),12)
+        partial=trial((32,0,10,2,500),0)
+        result=suggest([base,base,partial],'Balanced',(80,0,20),repeats=2,rejected=[partial.gains])
+        self.assertEqual(result.best,base.gains)
+        self.assertNotEqual(result.candidate,partial.gains)
+        with self.assertRaises(ValueError):suggest([base],'Balanced',(80,0,20),repeats=0)
+
 
 if __name__ == '__main__':
     unittest.main()

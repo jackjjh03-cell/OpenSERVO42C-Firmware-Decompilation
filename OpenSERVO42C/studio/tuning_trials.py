@@ -52,6 +52,8 @@ def make_trial(rows, interval, faulted, gains, context, start, end, tolerance,
     metrics = analyze(window, interval, False, tolerance)
     if metrics['settling_ms'] is None:
         raise ValueError("Response did not settle within the observation window")
+    if any(abs(r[1]-end)>tolerance for r in rows[last+1:]):
+        raise ValueError("Response left the settling band after the observation window")
     limit = min(gains[4], phase_limit)
     if (metrics['peak_demand'] >= limit or metrics['peak_load_permille'] >= 1000 or
             any(abs(r[3]) >= limit or r[4] >= 1000 for r in rows)):

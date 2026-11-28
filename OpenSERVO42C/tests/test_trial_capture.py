@@ -92,3 +92,36 @@ class CaptureTests(unittest.TestCase):
         c=Fake();cap=self.begin(c);c.finish();baseline=finish_trial(c,cap)
         with self.assertRaisesRegex(ValueError,'readback'):apply_trial_gains(c,(2048,0,64,2,500),baseline)
         self.assertEqual(len(c.writes),3)
+
+    def test_baseline_preflight_before_trace(self):
+        c=Fake();cap=self.begin(c);c.finish();baseline=finish_trial(c,cap)
+        for end,changed in ((101,None),(100,p.GET_LIMITS)):
+            c=Fake()
+            if changed:c.settings[changed]=(-2000,2000,1)
+            with self.assertRaisesRegex(ValueError,'baseline'):
+                begin_trial(c,end,9,2,5,8,baseline=baseline)
+            self.assertFalse(c.writes)
+        c=Fake()
+        with self.assertRaisesRegex(ValueError,'reviewed'):
+            begin_trial(c,100,9,2,5,8,baseline=baseline,expected_gains=(4097,0,64,2,500))
+        self.assertFalse(c.writes)
+        begin_trial(c,100,9,2,5,8,baseline=baseline,expected_gains=baseline.gains)
+        self.assertEqual(len(c.writes),2)
+
+    def test_changed_start_after_trace_no_move(self):
+        c=Fake();original=c.status
+        def status():
+            result=original()
+            if c.writes:result['target']=1
+            return result
+        c.status=status
+        with self.assertRaises(ValueError):self.begin(c)
+        self.assertEqual(c.writes,[(p.TRACE_START,(9,2))])
+
+    def test_configuration_changed_while_retrieving(self):
+        c=Fake();cap=self.begin(c);c.finish();original=c.read_trace
+        def read_trace():
+            c.settings[p.GET_PID]=(4097,0,64,2,500)
+            return original()
+        c.read_trace=read_trace
+        with self.assertRaisesRegex(ValueError,'during trace retrieval'):finish_trial(c,cap)

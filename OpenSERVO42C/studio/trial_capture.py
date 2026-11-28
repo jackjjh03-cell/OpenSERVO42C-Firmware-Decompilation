@@ -29,7 +29,7 @@ def configuration(client):
     return gains, context
 
 
-def begin_trial(client, end, count, interval, tolerance, tail_ms, cancelled=lambda:False):
+def begin_trial(client, end, count, interval, tolerance, tail_ms, cancelled=lambda:False, baseline=None, expected_gains=None):
     def check_cancelled():
         if cancelled():
             raise ValueError("Trial cancelled before motion was sent")
@@ -57,6 +57,12 @@ def begin_trial(client, end, count, interval, tolerance, tail_ms, cancelled=lamb
         raise ValueError("Comparative test moves require enabled travel limits and protect policy")
     if abs(end-start) <= tolerance:
         raise ValueError("Declared move must exceed the settling tolerance")
+    if baseline is not None and (context != baseline.context or
+            (start,end,interval,tolerance,tail_ms,gains[3:]) !=
+            (baseline.start,baseline.end,baseline.interval,baseline.tolerance,baseline.tail_ms,baseline.gains[3:])):
+        raise ValueError("Return to the baseline start and use identical move and machine settings before recording")
+    if expected_gains is not None and gains != tuple(expected_gains):
+        raise ValueError("Applied gains do not match the reviewed trial candidate")
     check_cancelled()
     client.write(p.TRACE_START,count,interval)
     # Confirm at least one baseline sample before issuing motion. No motion retries.
@@ -68,8 +74,15 @@ def begin_trial(client, end, count, interval, tolerance, tail_ms, cancelled=lamb
             break
     else:
         raise ValueError("No baseline sample; no move sent")
+    # Recheck immediately before sending motion: the start may have changed
+    # while the trace was acquiring its first sample.
+    current = client.status()
     after = client.run_status()
-    if after['flags']&63 != 47 or after['pending_fault']:
+    if (after['flags']&63 != 47 or after['pending_fault'] or
+            current['state'] != 2 or current['mode'] != 1 or current['faults'] or
+            current['observed'] or current['warnings'] or current['position_lost'] or
+            current['target'] != start or abs(current['actual']-start)>tolerance or
+            abs(current['speed_counts_s'])>protection[2]):
         raise ValueError("Output or feedback changed; no move sent")
     capture = Capture(gains,context,start,end,count,interval,tolerance,tail_ms,run['tick'],after['tick'])
     check_cancelled()
@@ -90,6 +103,9 @@ def finish_trial(client, capture):
     rows, interval, faulted = client.read_trace()
     if client.read(p.TRACE_STATUS) != expected or len(rows) != capture.count or interval != capture.interval:
         raise ValueError("Recording changed during retrieval")
+    status, run = client.status(), client.run_status()
+    if status['state'] != 0 or status['faults'] or run['flags']&1 or run['pending_fault'] or configuration(client) != (capture.gains,capture.context):
+        raise ValueError("Controller state or configuration changed during trace retrieval")
     if ((rows[0][0]-capture.tick_before)&0xffffffff) > ((capture.tick_after-capture.tick_before)&0xffffffff):
         raise ValueError("Recording does not belong to the started trial")
     return make_trial(rows,interval,faulted,capture.gains,capture.context,capture.start,capture.end,

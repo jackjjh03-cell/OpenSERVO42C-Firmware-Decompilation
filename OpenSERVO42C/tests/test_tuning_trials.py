@@ -41,3 +41,7 @@ class TrialTests(unittest.TestCase):
     def test_reversed_target_after_endpoint(self):
         rows=trace(); rows[-2]=rows[-2][:2]+(99,)+rows[-2][3:]
         with self.assertRaises(ValueError): trial(rows)
+
+    def test_late_departure_invalidates_trial(self):
+        rows=trace();rows[-1]=(rows[-1][0],120,100,100,200)
+        with self.assertRaisesRegex(ValueError,'after the observation window'):trial(rows)
