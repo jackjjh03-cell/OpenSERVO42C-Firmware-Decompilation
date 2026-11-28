@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(OpenSERVO42C_core C)
 enable_testing()
-add_library(openservo STATIC firmware/core/controller.c firmware/communication/protocol.c firmware/motion/motion.c firmware/core/pid.c firmware/hal/encoder.c firmware/hal/current.c firmware/hal/phase.c firmware/communication/stream.c firmware/core/drive.c)
+add_library(openservo STATIC firmware/core/controller.c firmware/communication/protocol.c firmware/motion/motion.c firmware/core/pid.c firmware/hal/encoder.c firmware/hal/current.c firmware/hal/phase.c firmware/communication/stream.c firmware/core/drive.c firmware/hal/board.c)
 target_include_directories(openservo PUBLIC firmware/include)
 target_compile_features(openservo PUBLIC c_std_11)
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
@@ -48,3 +48,7 @@ add_test(NAME drive_integration COMMAND drive_tests)
 
 add_executable(runtime_tests tests/runtime_tests.c firmware/target/runtime.c)
 add_test(NAME runtime_arithmetic COMMAND runtime_tests)
+
+add_executable(board_tests tests/board_tests.c)
+target_link_libraries(board_tests PRIVATE openservo)
+add_test(NAME board_startup COMMAND board_tests)
