@@ -101,7 +101,7 @@ void os_target_main(void){
     irq_enable(6,2);REG(0xe000ed20u)=(REG(0xe000ed20u)&0x00ffffffu)|0xc0000000u;
     REG(0xe000e014u)=hz/1000u-1u;REG(0xe000e018u)=0;REG(0xe000e010u)=7u;
     __asm volatile("cpsie i":::"memory");
-    uint32_t last=0,last_adc=0;uint8_t in[OS_FRAME_MAX],out[OS_FRAME_MAX];
+    uint32_t last=0,last_adc=0,last_error=0;uint8_t in[OS_FRAME_MAX],out[OS_FRAME_MAX];
     for(;;){
         uint32_t m=lock(),now=ticks;
         if(now!=last){
@@ -109,7 +109,8 @@ void os_target_main(void){
             if(elapsed>1u){uint32_t lost=elapsed-1u;bench.missed_ticks=UINT32_MAX-bench.missed_ticks<lost?UINT32_MAX:bench.missed_ticks+lost;}
             bench.ms=now;bench.adc_samples=adc_samples;bench.adc_errors=adc_errors;bench.uart_dropped=uart.dropped;
             bench.scale=(uint16_t)sample.scale;bench.slot1=(uint16_t)sample.slot1;bench.slot2=(uint16_t)sample.slot2;
-            bench.flags=(adc_valid&&adc_samples!=last_adc)?8u:0u;last_adc=adc_samples;
+            bench.flags=(adc_valid&&adc_samples!=last_adc&&adc_errors==last_error)?8u:0u;
+            bool adc_failed=adc_errors!=last_error;last_adc=adc_samples;last_error=adc_errors;
             unlock(m);
             if(status==OS_BOARD_OK){
                 uint16_t raw=0,angle=0;os_encoder_result er=os_mt6816_read(&encoder,&raw);
@@ -120,7 +121,7 @@ void os_target_main(void){
                 bench.pulse=(uint16_t)REG(0x40003000u);
                 if(REG(0x40020d44u)&128u)bench.flags|=4u;
                 bool en=((bench.flags&4u)!=0u)==(session.enable_high!=0u);
-                if(bench.flags&8u)os_run_adc(&run,&io,en,(bench.flags&1u)!=0u,bench.cal_angle,true,bench.scale,bench.slot2,bench.slot1);
+                if(adc_failed||(bench.flags&8u))os_run_adc(&run,&io,en,(bench.flags&1u)!=0u,bench.cal_angle,!adc_failed,bench.scale,bench.slot2,bench.slot1);
                 os_run_tick(&run,&io,now,bench.cal_angle,(bench.flags&1u)!=0u,bench.pulse,en,false,false);
             }
             /* Motor authorization remains false in this acquisition application. */

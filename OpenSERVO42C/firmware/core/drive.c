@@ -30,6 +30,7 @@ static bool pulse_update(os_drive *d,uint16_t pulse){
 void os_drive_position(os_drive *d,uint16_t angle,bool angle_valid,uint16_t pulse,bool enable,bool reference,bool travel){
     int64_t old=d->encoder.position;
     bool valid=d->configured && angle_valid && os_encoder_track(&d->encoder,angle,d->cfg.max_encoder_delta);
+    if(d->encoder.position<INT32_MIN||d->encoder.position>INT32_MAX)valid=false;
     /* Reacquire a lost encoder angle only with output disabled and a latched
      * fault. The coordinate remains invalid until operator confirmation. */
     if(!valid&&d->configured&&angle_valid&&!enable&&d->control.state==OS_FAULT&&d->control.position_lost){
@@ -37,9 +38,7 @@ void os_drive_position(os_drive *d,uint16_t angle,bool angle_valid,uint16_t puls
         valid=os_encoder_track(&d->encoder,angle,d->cfg.max_encoder_delta);
         d->control.healthy_ms=0;
     }
-    if(!valid)d->phase_valid=false;
-    else d->phase_valid=true;
-    if(d->encoder.position<INT32_MIN||d->encoder.position>INT32_MAX)valid=false;
+    d->phase_valid=valid;
     int32_t actual=valid?(int32_t)d->encoder.position:d->control.latest.actual;
     uint8_t critical=d->pending_fault;d->pending_fault=0;
     if(d->inhibit_requested){enable=false;d->inhibit_requested=false;}

@@ -92,5 +92,12 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     tick(&r,&io,107,true);assert(r.drive.control.faults&OS_F_TIMING);
     assert(command(&r,&io,OS_TEACH_CAPTURE,&low,1)==OS_REJECTED);
     assert(command(&r,&io,OS_TEACH_CANCEL,0,0)==OS_OK);closed(&r,&m);
+    assert(os_run_init(&r,&io,&cfg,&offsets));
+    for(unsigned i=0;i<100;i++)tick(&r,&io,i,false);
+    assert(os_run_confirm_reference(&r,0));tick(&r,&io,100,false);
+    assert(r.reference_confirmed&&r.drive.control.latest.reference_valid);
+    tick(&r,&io,102,false);
+    assert(r.drive.control.faults&OS_F_TIMING);
+    assert(!r.reference_confirmed&&!r.drive.control.latest.reference_valid&&r.drive.control.position_lost);closed(&r,&m);
     puts("scheduler tests passed");return 0;
 }

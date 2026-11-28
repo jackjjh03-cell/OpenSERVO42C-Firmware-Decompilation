@@ -21,7 +21,7 @@ void os_run_tick(os_run *r,const os_board_io *io,uint32_t now,uint16_t angle,boo
     if(r->tick_seen&&delta>1u){
         uint32_t missed=delta-1u;
         r->missed_ticks=UINT32_MAX-r->missed_ticks<missed?UINT32_MAX:r->missed_ticks+missed;
-        if(active||r->teaching)trip(r,io,OS_F_TIMING);
+        if(active||r->teaching||r->reference_confirmed||r->drive.control.latest.reference_valid)trip(r,io,OS_F_TIMING);
         r->drive.control.healthy_ms=0;
     }
     if(r->tick_seen&&r->adc_count==r->last_count){
@@ -31,7 +31,7 @@ void os_run_tick(os_run *r,const os_board_io *io,uint32_t now,uint16_t angle,boo
     r->last_count=r->adc_count;r->last_tick=now;r->tick_seen=true;
     os_run_enable(r,io,enable);
     os_drive_position(&r->drive,angle,valid,pulse,enable,(reference||r->reference_confirmed)&&!r->drive.control.position_lost,travel);
-    if(r->drive.control.position_lost){r->reference_confirmed=false;r->captured=0;}
+    if(r->drive.control.position_lost){r->reference_confirmed=false;r->captured=0;r->drive.control.latest.reference_valid=false;}
     /* Recovery/arming require fresh healthy electrical feedback, even when off. */
     if(!r->adc_good)r->drive.control.healthy_ms=0;
     if(r->drive.control.state!=OS_ACTIVE)close_gate(r,io);
