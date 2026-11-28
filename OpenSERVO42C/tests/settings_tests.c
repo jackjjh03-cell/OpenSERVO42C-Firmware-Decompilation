@@ -7,7 +7,7 @@ static bool read(void *p,unsigned s,uint8_t *out,unsigned n){fake *f=p;assert(s<
 static bool erase(void *p,unsigned s){fake *f=p;assert(s<2);if(f->budget--<=0)return false;memset(f->page[s],255,OS_SETTINGS_PAGE);f->erases++;return true;}
 static bool program(void *p,unsigned s,unsigned off,uint16_t v){fake *f=p;assert(s<2&&off%2==0&&off+1<OS_SETTINGS_PAGE);if(f->budget--<=0)return false;f->page[s][off]&=(uint8_t)v;f->page[s][off+1]&=(uint8_t)(v>>8);return true;}
 int main(void){fake f;memset(&f,255,sizeof f);f.budget=100;f.erases=0;f.read_fail=false;os_settings_io io={&f,read,erase,program};os_controller c;os_init(&c);
-    os_settings s={c.cfg,c.pid_cfg,c.motion_cfg,{-100,100,true},{16,1000,500,2048,300,25,false,600},0},out;
+    os_settings s={c.cfg,c.pid_cfg,c.motion_cfg,{-100,100,true},{16,1000,500,2048,300,25,false,600},0,0,0},out;
     uint32_t gen;unsigned slot;assert(!os_settings_load(&io,&out,&gen,&slot));assert(os_settings_save(&io,&s));assert(os_settings_load(&io,&out,&gen,&slot)&&gen==1&&out.limits.minimum==-100);
     /* Independently packed version-1 record: retain byte-for-byte compatibility. */
     static const uint8_t golden[94]={
@@ -23,5 +23,22 @@ int main(void){fake f;memset(&f,255,sizeof f);f.budget=100;f.erases=0;f.read_fai
     for(int cut=0;cut<48;cut++){f=original;f.budget=cut;assert(!os_settings_save(&io,&s));assert(os_settings_load(&io,&out,&gen,&slot)&&gen==1&&out.limits.maximum==100);}
     f=original;f.budget=100;assert(os_settings_save(&io,&s));assert(os_settings_load(&io,&out,&gen,&slot)&&gen==2&&out.limits.maximum==200);
     f.page[slot][20]^=1;assert(os_settings_load(&io,&out,&gen,&slot)&&gen==1);
+    /* Across every interrupted two-slot dirty transition, no successful
+     * authorization leaves a legacy fallback. Final publish retains dirty fallback. */
+    s.limits.maximum=100;f=original;
+    for(int cut=0;cut<102;cut++){
+        f=original;f.budget=cut;os_settings pending=s;
+        assert(!os_settings_calibration_pending(&io,&pending));
+        assert(os_settings_load(&io,&out,&gen,&slot));
+        assert(out.calibration_state==(cut<51?OS_CAL_LEGACY:OS_CAL_DIRTY));
+    }
+    f=original;f.budget=102;assert(os_settings_calibration_pending(&io,&s));
+    assert(os_settings_load(&io,&out,&gen,&slot)&&out.calibration_state==OS_CAL_DIRTY);
+    fake dirty=f;f.page[slot][0]^=1;assert(os_settings_load(&io,&out,&gen,&slot)&&out.calibration_state==OS_CAL_DIRTY);
+    f=dirty;s.calibration_state=OS_CAL_VERIFIED;s.calibration_crc=0x12345678u;
+    for(int cut=0;cut<51;cut++){f=dirty;f.budget=cut;assert(!os_settings_save(&io,&s));assert(os_settings_load(&io,&out,&gen,&slot)&&out.calibration_state==OS_CAL_DIRTY);}
+    f=dirty;f.budget=51;assert(os_settings_save(&io,&s));assert(os_settings_load(&io,&out,&gen,&slot)&&out.calibration_state==OS_CAL_VERIFIED&&out.calibration_crc==0x12345678u);
+    f.page[slot][0]^=1;assert(os_settings_load(&io,&out,&gen,&slot)&&out.calibration_state==OS_CAL_DIRTY);
+    s.calibration_state=OS_CAL_LEGACY;s.calibration_crc=0;assert(!os_settings_save(&io,&s));
     s.drive.trip_limit=s.drive.phase_limit;assert(!os_settings_save(&io,&s));puts("settings tests passed");return 0;
 }

@@ -4,7 +4,9 @@
 #define OS_SETTINGS_SLOT0 0x7600u
 #define OS_SETTINGS_SLOT1 0x7800u
 #define OS_SETTINGS_PAGE 512u
-#define OS_SETTINGS_BYTES 94u
+#define OS_SETTINGS_LEGACY_BYTES 94u
+#define OS_SETTINGS_BYTES 100u
+enum { OS_CAL_LEGACY=0, OS_CAL_DIRTY=1, OS_CAL_VERIFIED=2 };
 typedef struct {
     os_config protection;
     os_pid_config pid;
@@ -12,6 +14,8 @@ typedef struct {
     os_limits limits;
     os_drive_config drive;
     uint8_t enable_high;
+    uint8_t calibration_state;
+    uint32_t calibration_crc;
 } os_settings;
 typedef struct {
     void *ctx;
@@ -23,4 +27,6 @@ bool os_settings_valid(const os_settings *s);
 bool os_settings_load(const os_settings_io *io,os_settings *s,uint32_t *generation,unsigned *slot);
 /* Caller must ensure disabled output, safe flash timing and no concurrent access. */
 bool os_settings_save(const os_settings_io *io,const os_settings *s);
+/* Establish a dirty record in BOTH slots before any LUT erase. */
+bool os_settings_calibration_pending(const os_settings_io *io,os_settings *s);
 #endif

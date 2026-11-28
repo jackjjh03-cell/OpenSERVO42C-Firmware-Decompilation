@@ -184,15 +184,15 @@ void os_target_main(void){
     if(hz<1000000u||hz>48000000u)os_target_panic();
     if(!os_uart_init(&uart,&io,hz>>((REG(0x40002000u)>>11)&3u),115200u))os_target_panic();
     encoder=os_hc32_encoder_bus();
-    calibration=os_hc32_check_calibration();
     bool oled=os_oled_init(&io,hz>>((REG(0x40002000u)>>11)&3u));
     os_oled_buttons buttons={0};os_oled_view view={0};unsigned page=0;uint32_t display_tick=0;
     if(status==OS_BOARD_OK){
         bench.offset1=offsets.slot1;bench.offset2=offsets.slot2;
         flash=os_hc32_settings_flash();store=os_flash_settings_io(&flash);
         const os_controller *c=&run.drive.control;
-        const os_settings fallback={c->cfg,c->pid_cfg,c->motion_cfg,c->limits,{16,1000,500,2048,300,25,false,600},0};
+        const os_settings fallback={c->cfg,c->pid_cfg,c->motion_cfg,c->limits,{16,1000,500,2048,300,25,false,600},0,0,0};
         if(!os_settings_boot(&session,&run,&io,&store,&fallback,&offsets,OS_MOTOR_RUNTIME!=0))os_target_panic();
+        calibration=os_hc32_check_calibration(session.calibration_state,session.calibration_crc);
         os_board_step_init(&io,false);REG(0x40003050u)|=1u; /* counter only */
         if(OS_MOTOR_RUNTIME){os_board_enable_irq_init(&io);irq_enable(1,0);}
         irq_enable(4,0);os_feedback_dma_start(&io,(uint32_t)(uintptr_t)&dma_words);

@@ -1,13 +1,11 @@
 #include "phase.h"
-/* Original calibration markers and LUT. Never erase or program these pages here. */
+/* Caller must first validate the table against its persistent calibration state. */
 bool os_hc32_calibrated_angle(uint16_t raw,uint16_t *angle){
-    const volatile uint16_t *knots=(const volatile uint16_t *)(uintptr_t)0x7f94u;
-    const volatile uint16_t *lut_valid=(const volatile uint16_t *)(uintptr_t)0x7f96u;
     const uint16_t *lut=(const uint16_t *)(uintptr_t)0x8000u;
-    return os_calibrated_angle(lut,*knots,*lut_valid,raw,angle);
+    return os_calibrated_angle(lut,1,1,raw,angle);
 }
 #include "calibration_check.h"
-os_calibration_check os_hc32_check_calibration(void){
-    return os_check_calibration((const uint16_t *)(uintptr_t)0x8000u,
+os_calibration_check os_hc32_check_calibration(uint8_t state,uint32_t crc){
+    return os_check_managed_calibration((const uint16_t *)(uintptr_t)0x8000u,state,crc,
         *(volatile uint16_t *)(uintptr_t)0x7f94u,*(volatile uint16_t *)(uintptr_t)0x7f96u);
 }

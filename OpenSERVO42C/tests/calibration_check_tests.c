@@ -1,5 +1,6 @@
 #include "calibration_check.h"
 #include "phase.h"
+#include "settings.h"
 #include <assert.h>
 #include <stdio.h>
 static uint16_t lut[OS_LUT_ENTRIES];
@@ -8,6 +9,12 @@ int main(void){
     os_calibration_check c=os_check_calibration(lut,1,1);
     assert(c.flags==3&&c.winding==65536&&c.max_delta==4&&c.forward==16384);
     assert(!os_check_calibration(lut,1,0).flags);
+    uint32_t crc=os_calibration_crc(lut);
+    assert(crc==0x05b6de1bu);
+    assert(os_check_managed_calibration(lut,OS_CAL_VERIFIED,crc,0,0).flags==3);
+    assert(!os_check_managed_calibration(lut,OS_CAL_DIRTY,crc,1,1).flags);
+    lut[42]++;assert(!os_check_managed_calibration(lut,OS_CAL_VERIFIED,crc,1,1).flags);lut[42]--;
+    assert(os_check_managed_calibration(lut,OS_CAL_LEGACY,0,1,1).flags==3);
     for(unsigned i=0;i<OS_LUT_ENTRIES;i++)lut[i]=(uint16_t)(12345u-i*4u);
     c=os_check_calibration(lut,1,1);assert(c.flags==3&&c.winding==-65536&&c.reverse==16384);
     lut[10]=(uint16_t)(lut[9]+32768u);c=os_check_calibration(lut,1,1);assert(c.flags&OS_CAL_AMBIGUOUS);

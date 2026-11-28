@@ -34,8 +34,8 @@ jobs:
       - name: Link optimized acquisition application
         run: python3 OpenSERVO42C/tools/check_target_link.py --bringup --optimized
 
-      - name: Link motor runtime application
-        run: python3 OpenSERVO42C/tools/check_target_link.py --motor
+      - name: Link motor runtime without LTO (unused sections removed)
+        run: python3 OpenSERVO42C/tools/check_target_link.py --motor --gc-only
 
       - name: Link optimized motor runtime
         run: python3 OpenSERVO42C/tools/check_target_link.py --motor --optimized

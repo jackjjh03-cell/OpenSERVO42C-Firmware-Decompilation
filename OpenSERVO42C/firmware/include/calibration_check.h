@@ -6,5 +6,8 @@
 typedef struct {int32_t winding;uint16_t max_delta,forward,reverse,flat;uint8_t flags;} os_calibration_check;
 enum {OS_CAL_MARKERS=1,OS_CAL_WINDING=2,OS_CAL_AMBIGUOUS=4};
 os_calibration_check os_check_calibration(const uint16_t *lut,uint16_t knots,uint16_t valid);
-os_calibration_check os_hc32_check_calibration(void);
+/* CRC-32/ISO-HDLC over the little-endian 32 KiB lookup table. */
+uint32_t os_calibration_crc(const uint16_t *lut);
+os_calibration_check os_check_managed_calibration(const uint16_t *lut,uint8_t state,uint32_t crc,uint16_t knots,uint16_t valid);
+os_calibration_check os_hc32_check_calibration(uint8_t state,uint32_t crc);
 #endif

@@ -10,7 +10,7 @@ static void wr(void *p,uint32_t a,uint32_t v){((mock *)p)->regs[idx(a)]=v;}
 static bool rd(void *p,unsigned s,uint8_t *o,unsigned n){memcpy(o,((mock *)p)->pages[s],n);return true;}
 static bool er(void *p,unsigned s){mock *m=p;memset(m->pages[s],255,512);m->erases++;return true;}
 static bool pg(void *p,unsigned s,unsigned off,uint16_t v){mock *m=p;m->pages[s][off]&=(uint8_t)v;m->pages[s][off+1]&=(uint8_t)(v>>8);return true;}
-int main(void){mock m={0};memset(m.pages,255,sizeof m.pages);os_board_io b={&m,rr,wr,0,0};os_settings_io io={&m,rd,er,pg};os_controller c;os_init(&c);os_settings f={c.cfg,c.pid_cfg,c.motion_cfg,c.limits,{16,1000,500,2048,300,25,false,600},0};os_offsets o={2048,2048};os_run r;os_settings_session s;
+int main(void){mock m={0};memset(m.pages,255,sizeof m.pages);os_board_io b={&m,rr,wr,0,0};os_settings_io io={&m,rd,er,pg};os_controller c;os_init(&c);os_settings f={c.cfg,c.pid_cfg,c.motion_cfg,c.limits,{16,1000,500,2048,300,25,false,600},0,0,0};os_offsets o={2048,2048};os_run r;os_settings_session s;
     assert(os_settings_boot(&s,&r,&b,&io,&f,&o,true));assert(!s.loaded&&!r.drive.control.hal_validated&&!r.gate.enabled);
     r.drive.control.limits=(os_limits){-400,600,true};r.reference_confirmed=true;
     assert(!os_settings_commit(&s,&r,&io,false)&&m.erases==0);r.enable=true;assert(!os_settings_commit(&s,&r,&io,true)&&m.erases==0);r.enable=false;

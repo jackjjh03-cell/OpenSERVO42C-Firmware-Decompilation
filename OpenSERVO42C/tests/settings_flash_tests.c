@@ -19,7 +19,7 @@ int main(void){mock m={0};os_flash f={&m,read_reg,write_reg,read_byte,erase_trig
     assert(io.erase(io.ctx,0)&&m.erases==1&&m.ctrl==0);assert(io.program(io.ctx,0,0,0x1234)&&m.ctrl==0);assert(m.programs==1);
     assert(io.read(io.ctx,0,buf,2)&&buf[0]==0x34&&buf[1]==0x12);assert(!io.program(io.ctx,0,0,0xffff)&&m.programs==1);
     m.fail=true;assert(!io.program(io.ctx,0,2,0x1234));assert(!io.erase(io.ctx,0));m.fail=false;
-    os_controller c;os_init(&c);os_settings s={c.cfg,c.pid_cfg,c.motion_cfg,{-100,100,true},{16,1000,500,2048,300,25,false,600},0},out;uint32_t gen;unsigned slot;
+    os_controller c;os_init(&c);os_settings s={c.cfg,c.pid_cfg,c.motion_cfg,{-100,100,true},{16,1000,500,2048,300,25,false,600},0,0,0},out;uint32_t gen;unsigned slot;
     assert(os_settings_save(&io,&s));assert(os_settings_load(&io,&out,&gen,&slot)&&gen==1&&out.limits.minimum==-100);
     m.ctrl=16;assert(!io.erase(io.ctx,0)&&!io.read(io.ctx,0,buf,2));puts("flash adapter tests passed");return 0;
 }

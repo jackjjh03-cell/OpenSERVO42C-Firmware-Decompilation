@@ -9,12 +9,13 @@ bool os_settings_boot(os_settings_session *session,os_run *r,const os_board_io *
     c->cfg=s.protection;c->pid_cfg=s.pid;c->motion_cfg=s.motion;c->limits=s.limits;
     c->hal_validated=hardware_validated&&loaded;
     session->generation=generation;session->loaded=loaded;session->enable_high=s.enable_high;
+    session->calibration_state=s.calibration_state;session->calibration_crc=s.calibration_crc;
     return true;
 }
 bool os_settings_commit(os_settings_session *session,os_run *r,const os_settings_io *store,bool quiesced){
     os_controller *c=&r->drive.control;
     if(!quiesced||r->gate.enabled||r->enable||r->teaching||c->state!=OS_OFF||c->faults||r->drive.pending_fault)return false;
-    os_settings s={c->cfg,c->pid_cfg,c->motion_cfg,c->limits,r->drive.cfg,session->enable_high};
+    os_settings s={c->cfg,c->pid_cfg,c->motion_cfg,c->limits,r->drive.cfg,session->enable_high,session->calibration_state,session->calibration_crc};
     if(!os_settings_valid(&s))return false;
     /* No encoder observations during flash programming: do not assume shaft stayed still. */
     r->reference_confirmed=false;c->latest.reference_valid=false;c->position_lost=true;
@@ -34,7 +35,7 @@ size_t os_storage_dispatch(os_settings_session *session,os_run *r,const os_setti
         else{
             os_drive_config d={os_wire_get16(in+6),os_wire_get16(in+8),os_wire_get16(in+10),os_wire_get16(in+12),os_wire_get16(in+14),in[16],in[17]!=0u,os_wire_get16(in+18)};
             os_controller *c=&r->drive.control;
-            os_settings s={c->cfg,c->pid_cfg,c->motion_cfg,c->limits,d,in[20]};
+            os_settings s={c->cfg,c->pid_cfg,c->motion_cfg,c->limits,d,in[20],session->calibration_state,session->calibration_crc};
             if(r->gate.enabled||r->enable||r->teaching||c->state!=OS_OFF||r->drive.pending_fault||!os_settings_valid(&s))out[6]=OS_REJECTED;
             else{
                 /* Geometry and polarity changes require a new commissioning pass. */
