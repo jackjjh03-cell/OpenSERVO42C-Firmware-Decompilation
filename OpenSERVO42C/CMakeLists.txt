@@ -80,3 +80,6 @@ add_test(NAME settings_flash COMMAND settings_flash_tests)
 add_executable(settings_session_tests tests/settings_session_tests.c)
 target_link_libraries(settings_session_tests PRIVATE openservo)
 add_test(NAME settings_session COMMAND settings_session_tests)
+
+add_test(NAME studio_client COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_studio_client.py)
+set_tests_properties(studio_client PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
