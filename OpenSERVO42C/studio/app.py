@@ -13,7 +13,7 @@ from .gain_search import suggest
 from .trial_capture import begin_trial, finish_trial
 from .sweep import Sweep
 from .lut_transfer import LutTransfer
-from . import profiles
+from . import profiles, units
 
 GROUPS = (
     ("Protection", p.GET_CONFIG, p.SET_CONFIG, ("Following error (counts)", "Stall error (counts)", "Stall speed (counts/s)", "Stall load (permille)", "Fault dwell (ms)", "Clear dwell (ms)", "Policy (0 monitor, 1 warn, 2 protect)")),
@@ -70,6 +70,16 @@ class Studio:
         monitor = ttk.Frame(tabs, padding=12); tabs.add(monitor, text="Monitor")
         self.status_text = tk.StringVar(value="No controller data")
         ttk.Label(monitor, textvariable=self.status_text, justify="left").pack(anchor="w")
+        unit_bar=ttk.Frame(monitor);unit_bar.pack(fill="x",pady=5)
+        self.display_unit=tk.StringVar(value="Counts");self.travel_per_rev=tk.StringVar(value="")
+        ttk.Label(unit_bar,text="Display units").pack(side="left")
+        unit_menu=ttk.Combobox(unit_bar,textvariable=self.display_unit,values=units.UNITS,state="readonly",width=14)
+        unit_menu.pack(side="left",padx=4);unit_menu.bind("<<ComboboxSelected>>",lambda _:self.update_units())
+        ttk.Label(unit_bar,text="Travel per motor rev (mm)").pack(side="left",padx=4)
+        ttk.Entry(unit_bar,textvariable=self.travel_per_rev,width=10).pack(side="left")
+        self.travel_per_rev.trace_add("write",lambda *_:self.update_units())
+        self.unit_text=tk.StringVar(value="Display only; motion commands and CSV remain in counts.")
+        ttk.Label(monitor,textvariable=self.unit_text,wraplength=850).pack(anchor="w")
         self.graph = tk.Canvas(monitor, background="#151a21", highlightthickness=0, height=280)
         self.graph.pack(fill="both", expand=True, pady=10)
         self.graph.bind("<Configure>", lambda _: self.draw_graph())
@@ -123,6 +133,9 @@ class Studio:
         self.calibration_text = tk.StringVar(value="Calibration not inspected")
         ttk.Button(diagnostics, text="Inspect calibration", command=lambda: self.submit(lambda c: c.read(p.GET_CALIBRATION), self.show_calibration)).pack(anchor="w")
         ttk.Label(diagnostics, textvariable=self.calibration_text, justify="left", wraplength=850).pack(anchor="w", pady=10)
+        self.detail_text=tk.StringVar(value="No diagnostic snapshot")
+        ttk.Button(diagnostics,text="Read hardware and timing snapshot",command=self.read_diagnostics).pack(anchor="w")
+        ttk.Label(diagnostics,textvariable=self.detail_text,justify="left",wraplength=850).pack(anchor="w",pady=8)
         tuning = ttk.Frame(tabs, padding=12); tabs.add(tuning, text="Tuning trace")
         self.trace_count = self.field(tuning, 0, "Samples (1–160)", "160")
         self.trace_interval = self.field(tuning, 1, "Sample interval (ms)", "5")
@@ -240,6 +253,8 @@ class Studio:
         self.lut_active=False;self.lut_transfer=None;self.lut_progress["value"]=0
         self.trial_text.set('No comparison trials for this connection.')
         self.reset_search()
+        self.update_units()
+        self.detail_text.set("No diagnostic snapshot")
         self.message.set("Connected. No motor commands sent.")
 
     def disconnect(self):
@@ -256,6 +271,7 @@ class Studio:
     def on_disconnected(self, _):
         self.connected = False; self.snapshot = None
         self.status_text.set("Disconnected — motor state unknown")
+        self.update_units();self.detail_text.set("Disconnected")
 
     def fill_profile(self, groups):
         for (name, _, _, _), variables in zip(GROUPS,self.config_vars):
@@ -323,6 +339,7 @@ class Studio:
                     self.pending=(lambda c:c.write(p.CAL_STOP),None,True)
                 self.message.set(str(exc)); self.snapshot = None
                 self.status_text.set("Controller state unknown — verify output independently.")
+                self.update_units()
             if self.pending is not None:
                 action, callback, urgent = self.pending; self.pending = None
                 if urgent or (not failed and not self.closing):
@@ -356,8 +373,35 @@ class Studio:
         state = states[s["state"]] if s["state"] < len(states) else "Unknown"
         mode = MODE_NAMES[s["mode"]] if s["mode"] < len(MODE_NAMES) else "Unknown"
         self.status_text.set("{} · {} · PWM {} · EN {} · Reference {}\nActual {:,}   Target {:,}   Speed {:,} counts/s   Load {:.1f}%\nFaults: {}   Pending: {}   Missed ticks: {}".format(state,mode,"on" if r["flags"]&1 else "off","on" if r["flags"]&2 else "off","valid" if r["flags"]&32 else "unconfirmed",s["actual"],s["target"],s["speed_counts_s"],s["load_permille"]/10,fault_names(s["faults"]),fault_names(r["pending_fault"]),r["missed_ticks"]))
+        self.update_units()
         self.history.append((time.monotonic()-self.start,s["actual"],s["target"],s["speed_counts_s"],s["load_permille"]))
         self.draw_graph()
+
+    def update_units(self):
+        if not self.snapshot:
+            self.unit_text.set("No current position data. Commands and CSV use counts.");return
+        s,_=self.snapshot
+        try:
+            self.unit_text.set(units.readout(s["actual"],s["target"],s["speed_counts_s"],self.display_unit.get(),self.travel_per_rev.get()))
+        except ValueError as exc:self.unit_text.set(str(exc))
+
+    def read_diagnostics(self):
+        def read(c):
+            return c.read(p.GET_BENCH),c.read(p.GET_TIMING),c.read(p.GET_STORAGE),c.read(p.LUT_STATUS)
+        def show(data):
+            bench,timing,storage,lut=data
+            b=dict(zip(p.BENCH_FIELDS,bench));hz=b["core_hz"]
+            lines=["Core clock: {} Hz | ADC samples: {} | ADC errors: {} | Encoder errors: {}".format(hz,b["adc_samples"],b["adc_errors"],b["encoder_errors"]),
+                   "ADC scale: {} | Raw slots: {} / {} | Zero offsets: {} / {}".format(b["scale"],b["slot1"],b["slot2"],b["offset1"],b["offset2"]),
+                   "Encoder raw: {} | Calibrated: {} | Status: {} | STEP counter: {}".format(b["raw_angle"],b["cal_angle"],b["encoder_status"],b["pulse"]),
+                   "Missed ticks: {} | UART dropped: {} | Board status: {}".format(b["missed_ticks"],b["uart_dropped"],b["board_status"])]
+            for i,name in enumerate(("Current loop","Position loop","Command handler")):
+                peak,overruns=timing[2*i:2*i+2]
+                lines.append("{}: {} cycles peak{} | {} observed overruns".format(name,peak," ({:.1f} us)".format(peak*1000000/hz) if hz else "",overruns))
+            lines.append("Settings: {} | Generation: {} | EN polarity: {}".format("loaded" if storage[0] else "defaults",storage[2],"high" if storage[1] else "low"))
+            lines.append("Calibration journal: {} | Upload active: {} | Written halfwords: {}".format({0:"legacy",1:"dirty",2:"verified"}.get(lut[2],"unknown"),bool(lut[1]),lut[0]))
+            self.detail_text.set("\n".join(lines))
+        self.submit(read,show)
 
     def start_calibration(self):
         if not self.connected or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
