@@ -23,6 +23,7 @@ bool os_run_teach_begin(os_run *r,const os_board_io *io);
 bool os_run_teach_capture(os_run *r,bool maximum,int32_t *position);
 bool os_run_teach_apply(os_run *r,uint32_t lower_margin,uint32_t upper_margin);
 void os_run_teach_cancel(os_run *r);
-/* Edge-driven hardware disable: never opens the gate on a rising edge. */
+/* Sample the level or service a latched edge (including a short pulse). */
+void os_run_enable_edge(os_run *r,const os_board_io *io,bool enable);
 void os_run_enable(os_run *r,const os_board_io *io,bool enable);
 #endif

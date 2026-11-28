@@ -14,5 +14,8 @@ typedef struct {
 typedef enum { OS_BOARD_OK,OS_BOARD_CLOCK,OS_BOARD_BUTTON,OS_BOARD_ADC,OS_BOARD_OFFSET } os_board_result;
 os_board_result os_board_prepare(const os_board_io *io,os_offsets *offsets);
 void os_board_step_init(const os_board_io *io,bool reverse);
+/* Both edges of PB7, using the original factory GPIO IRQ fields. */
+void os_board_enable_irq_init(const os_board_io *io);
+bool os_board_enable_irq_take(const os_board_io *io);
 os_board_io os_hc32_board_io(void);
 #endif

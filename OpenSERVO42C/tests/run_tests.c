@@ -107,5 +107,12 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     os_run_adc(&r,&io,false,false,0,true,2000,2048,2048);
     tick(&r,&io,101,false);
     assert(r.drive.control.faults&OS_F_ENCODER);assert(!r.reference_confirmed);closed(&r,&m);
+    start(&r,&io,0);
+    os_run_enable_edge(&r,&io,true); /* latched edge, input already back high */
+    closed(&r,&m);assert(r.drive.inhibit_requested);
+    adc(&r,&io,true);closed(&r,&m);assert(!os_run_arm(&r,&io));
+    tick(&r,&io,100,true);assert(r.drive.control.state==OS_OFF);
+    tick(&r,&io,101,true);assert(!r.gate.enabled);
+    assert(os_run_arm(&r,&io));
     puts("scheduler tests passed");return 0;
 }

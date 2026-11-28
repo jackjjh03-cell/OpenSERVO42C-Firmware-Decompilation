@@ -27,6 +27,11 @@ int main(void){fake f={.lock=true,.adc=true,.button=true};os_board_io io={&f,rea
     assert((read(&f,0x4000244cu)&0x7fffu)==(8u|(9u<<5)|(18u<<10)));
     os_board_step_init(&io,false);assert(read(&f,0x40003088u)==16&&read(&f,0x4000308cu)==64);
     os_board_step_init(&io,true);assert(read(&f,0x40003088u)==64&&read(&f,0x4000308cu)==16);
+    write(&f,0x40020e50u,0xffffu);os_board_enable_irq_init(&io);
+    assert(read(&f,0x40020e50u)==0xff7fu);
+    assert(read(&f,0x40020d78u)&128u);assert(read(&f,0x40020d7cu)&128u);
+    assert(!os_board_enable_irq_take(&io));
+    write(&f,0x40020e40u,128u);assert(os_board_enable_irq_take(&io));
     f=(fake){0};assert(os_board_prepare(&io,&o)==OS_BOARD_CLOCK);
     f=(fake){.lock=true};assert(os_board_prepare(&io,&o)==OS_BOARD_BUTTON);
     f=(fake){.lock=true,.button=true};assert(os_board_prepare(&io,&o)==OS_BOARD_ADC);

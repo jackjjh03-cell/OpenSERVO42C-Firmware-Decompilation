@@ -36,6 +36,10 @@ static void read_encoder(void){
 }
 #if OS_MOTOR_RUNTIME
 static uint32_t position_adc;
+static void service_enable_edge(void){
+    if(os_board_enable_irq_take(&io))os_run_enable_edge(&run,&io,input_enabled());
+}
+void enable_irq(void){service_enable_edge();}
 /* IRQs 4 and SysTick run at the same priority: neither can preempt the other.
  * Foreground dispatch takes PRIMASK only while it accesses the shared owner. */
 static void timing_trip(void){
@@ -69,7 +73,9 @@ void current_irq(void){
     }else{adc_valid=false;count(&adc_errors);}
     (void)os_feedback_dma_complete(&io);
 #if OS_MOTOR_RUNTIME
+    service_enable_edge();
     read_encoder();
+    service_enable_edge();
     os_run_adc(&run,&io,input_enabled(),(bench.flags&1u)!=0u,bench.cal_angle,adc_valid,
                (uint16_t)sample.scale,(uint16_t)sample.slot2,(uint16_t)sample.slot1);
     /* If another conversion has already completed, the current loop has no
@@ -81,6 +87,7 @@ void systick_irq(void){
     ticks++;
 #if OS_MOTOR_RUNTIME
     if(!run.drive.configured)return;
+    service_enable_edge();
     bool fresh=run.adc_count!=position_adc;position_adc=run.adc_count;
     bench.ms=ticks;bench.adc_samples=adc_samples;bench.adc_errors=adc_errors;
     bench.scale=(uint16_t)sample.scale;bench.slot1=(uint16_t)sample.slot1;bench.slot2=(uint16_t)sample.slot2;
@@ -138,6 +145,7 @@ void os_target_main(void){
         const os_settings fallback={c->cfg,c->pid_cfg,c->motion_cfg,c->limits,{16,1000,500,2048,300,25,false,600},0};
         if(!os_settings_boot(&session,&run,&io,&store,&fallback,&offsets,OS_MOTOR_RUNTIME!=0))os_target_panic();
         os_board_step_init(&io,false);REG(0x40003050u)|=1u; /* counter only */
+        if(OS_MOTOR_RUNTIME){os_board_enable_irq_init(&io);irq_enable(1,0);}
         irq_enable(4,0);os_feedback_dma_start(&io,(uint32_t)(uintptr_t)&dma_words);
     }
     irq_enable(6,2);REG(0xe000ed20u)=(REG(0xe000ed20u)&0x00ffffffu)|(OS_MOTOR_RUNTIME?0u:0xc0000000u);
@@ -176,12 +184,13 @@ void os_target_main(void){
 #if OS_MOTOR_RUNTIME
             m=lock();
             (void)REG(0xe000e010u);uint32_t start=REG(0xe000e018u);
-            if(status==OS_BOARD_OK)os_run_enable(&run,&io,input_enabled());
+            if(status==OS_BOARD_OK){service_enable_edge();os_run_enable(&run,&io,input_enabled());}
 #endif
             if(status==OS_BOARD_OK && in[4]>=OS_GET_STORAGE && in[4]<=OS_SET_DRIVE)len=storage_request(in,n,out);
             else if(status==OS_BOARD_OK&&in[4]!=OS_GET_BENCH)len=os_run_dispatch(&run,&io,in,n,out);
             else len=os_bench_dispatch(&run.drive.control,&bench,in,n,out);
 #if OS_MOTOR_RUNTIME
+            if(status==OS_BOARD_OK){service_enable_edge();os_run_enable(&run,&io,input_enabled());}
             uint32_t end=REG(0xe000e018u),csr=REG(0xe000e010u);
             /* COUNTFLAG plus the down-counter detects at least one whole ms
              * spent masked. Flash maintenance runs only with output off. */

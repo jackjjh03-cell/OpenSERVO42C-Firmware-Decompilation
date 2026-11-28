@@ -17,6 +17,11 @@ void os_run_enable(os_run *r,const os_board_io *io,bool enable){
         close_gate(r,io);
     }
 }
+void os_run_enable_edge(os_run *r,const os_board_io *io,bool enable){
+    /* A latched edge may represent a disable/re-enable pair. Do not resume
+     * motion until a fresh explicit arm, even if the input is high now. */
+    os_run_enable(r,io,false);r->enable=enable;
+}
 void os_run_tick(os_run *r,const os_board_io *io,uint32_t now,uint16_t angle,bool valid,uint16_t pulse,bool enable,bool reference,bool travel){
     if(r->tick_seen && now==r->last_tick)return;
     bool active=r->drive.control.state==OS_ACTIVE;

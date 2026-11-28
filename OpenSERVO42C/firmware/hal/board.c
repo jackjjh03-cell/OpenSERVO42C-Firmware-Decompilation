@@ -84,6 +84,13 @@ os_board_result os_board_prepare(const os_board_io *io,os_offsets *offsets){
     }
     W(ADC+0xc8,0);return os_offset_finish(&cal,offsets)?OS_BOARD_OK:OS_BOARD_OFFSET;
 }
+void os_board_enable_irq_init(const os_board_io *io){
+    B(0x40020e50u,7,0);B(0x40020d78u,7,1);B(0x40020d7cu,7,1);
+}
+bool os_board_enable_irq_take(const os_board_io *io){
+    if(!(R(0x40020e40u)&128u))return false;
+    B(0x40020e50u,7,0);return true;
+}
 void os_board_step_init(const os_board_io *io,bool reverse){
     pin(io,64,7,7,0);pin(io,0,11,33,7);pin(io,0,8,33,6);
     const uint32_t c=0x40003000u;
