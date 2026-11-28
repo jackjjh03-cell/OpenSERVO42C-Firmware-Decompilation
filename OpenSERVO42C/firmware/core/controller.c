@@ -7,7 +7,7 @@ static uint16_t dwell(uint16_t n, bool condition) {
     return !condition ? 0u : n==UINT16_MAX ? n : (uint16_t)(n+1u);
 }
 static void stop_demand(os_controller *c){
-    c->demand=0;c->moving=false;c->still_ms=0;os_pid_reset(&c->pid);
+    c->demand=0;c->moving=false;c->still_ms=0;c->live_pid=false;os_pid_reset(&c->pid);
 }
 void os_init(os_controller *c) {
     *c=(os_controller){0};
@@ -30,6 +30,22 @@ bool os_set_pid(os_controller *c,const os_pid_config *v){
     if(c->state!=OS_OFF || !os_pid_config_valid(v))return false;
     c->pid_cfg=*v;os_pid_reset(&c->pid);return true;
 }
+static bool within(const os_limits *l,int32_t p){return !l->enabled||(p>=l->minimum&&p<=l->maximum);}
+bool os_set_limits(os_controller *c,const os_limits *v){
+    if(c->state!=OS_OFF||c->latest.enable_input||v->minimum>=v->maximum)return false;
+    c->limits=*v;c->healthy_ms=0;return true;
+}
+bool os_set_live_pid(os_controller *c,const os_pid_config *v){
+    if(c->state!=OS_ACTIVE||c->mode!=OS_POSITION||!c->latest.feedback_valid||!c->latest.reference_valid||
+       !c->latest.enable_input||c->observed||!os_pid_config_valid(v)||v->output_limit>c->pid_cfg.output_limit)return false;
+    c->live_pid_cfg=*v;c->live_pid=true;
+    /* Preserve accumulated integral subject to the new output cap. Avoid a derivative kick. */
+    int64_t cap=(int64_t)v->output_limit*4096;
+    if(c->pid.integral_q12>cap)c->pid.integral_q12=cap;
+    if(c->pid.integral_q12< -cap)c->pid.integral_q12= -cap;
+    c->pid.previous_actual=c->latest.actual;c->pid.initialized=true;
+    return true;
+}
 bool os_set_motion(os_controller *c,const os_motion_config *v){
     if(c->state!=OS_OFF || !os_motion_config_valid(v))return false;
     c->motion_cfg=*v;return true;
@@ -43,7 +59,8 @@ bool os_arm(os_controller *c) {
        c->position_lost || !c->latest.feedback_valid || !c->latest.enable_input ||
        c->observed || c->healthy_ms<c->cfg.clear_ms ||
        (c->mode!=OS_CNC && c->mode!=OS_POSITION) ||
-       (c->mode==OS_POSITION && !c->latest.reference_valid)) return false;
+       (c->mode==OS_POSITION && !c->latest.reference_valid) ||
+       (c->limits.enabled && (!c->latest.reference_valid || !within(&c->limits,c->latest.actual)))) return false;
     stop_demand(c);c->command=c->latest.actual;c->motion=(os_motion){0};
     c->state=OS_ACTIVE; return true;
 }
@@ -56,6 +73,7 @@ bool os_start_move(os_controller *c,int32_t end){
        !c->latest.reference_valid || !c->latest.feedback_valid || !c->latest.enable_input ||
        c->latest.travel_violation || c->latest.speed_counts_s!=0 ||
        magnitude((int64_t)c->command-c->latest.actual)>c->pid_cfg.deadband)return false;
+    if(!within(&c->limits,end)||!within(&c->limits,c->latest.actual)||!within(&c->limits,c->command))return false;
     if(!os_motion_plan(&c->motion,c->command,end,&c->motion_cfg))return false;
     c->moving=c->motion.total_ms!=0;return true;
 }
@@ -70,6 +88,10 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
             c->moving=c->motion.elapsed_ms<c->motion.total_ms;
         }
         sample.target=c->command;
+    }
+    if(c->limits.enabled){
+        if(c->state==OS_ACTIVE&&!sample.reference_valid)critical|=OS_F_REFERENCE;
+        if(sample.reference_valid&&(!within(&c->limits,sample.actual)||!within(&c->limits,sample.target)))sample.travel_violation=true;
     }
     bool unchanged=sample.target==c->latest.target;
     c->latest=sample;
@@ -89,6 +111,7 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
     c->healthy_ms=dwell(c->healthy_ms,!critical && !stall && !follow && !travel);
     uint32_t trip=critical;
     if(c->state==OS_ACTIVE && c->cfg.policy==OS_PROTECT) trip|=noncritical;
+    if(c->state==OS_ACTIVE && c->limits.enabled && travel)trip|=OS_F_TRAVEL;
     if(trip) {
         if(c->state!=OS_FAULT) c->fault_sample=sample;
         c->faults|=trip;
@@ -98,7 +121,7 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
     else if(c->state==OS_ACTIVE){
         c->still_ms=dwell(c->still_ms,unchanged && !c->moving);
         bool stationary=c->still_ms>=100u && magnitude(sample.speed_counts_s)<=c->cfg.stall_speed_counts_s;
-        c->demand=os_pid_step(&c->pid,&c->pid_cfg,sample.target,sample.actual,stationary);
+        c->demand=os_pid_step(&c->pid,c->live_pid?&c->live_pid_cfg:&c->pid_cfg,sample.target,sample.actual,stationary);
     } else stop_demand(c);
 }
 bool os_acknowledge(os_controller *c) {

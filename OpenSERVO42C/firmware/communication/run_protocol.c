@@ -30,6 +30,30 @@ size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t 
         if(in[5]){p[0]=OS_BAD_LENGTH;break;}
         p[1]=(uint8_t)((r->gate.enabled?1u:0u)|(r->enable?2u:0u)|(r->adc_good?4u:0u)|(r->drive.phase_valid?8u:0u));
         p[2]=r->drive.pending_fault;put32(p+3,r->last_tick);put32(p+7,r->adc_count);put32(p+11,r->missed_ticks);len=15;break;
+    case OS_GET_LIMITS:
+        if(in[5]){p[0]=OS_BAD_LENGTH;break;}
+        put32(p+1,(uint32_t)c->limits.minimum);put32(p+5,(uint32_t)c->limits.maximum);p[9]=(uint8_t)c->limits.enabled;len=10;break;
+    case OS_SET_LIMITS:
+        if(in[5]!=9u||in[14]>1u){p[0]=OS_BAD_LENGTH;break;}
+        {os_limits v={(int32_t)get32(in+6),(int32_t)get32(in+10),in[14]!=0u};
+         if(r->enable||r->gate.enabled||!os_set_limits(c,&v))p[0]=OS_REJECTED;}
+        break;
+    case OS_CONFIRM_REFERENCE:
+        if(in[5]!=4u)p[0]=OS_BAD_LENGTH;
+        else if(r->enable||r->gate.enabled||!r->adc_good||!r->drive.phase_valid||
+            !os_drive_confirm_reference(&r->drive,(int32_t)get32(in+6),r->drive.encoder.previous,r->drive.previous_pulse))p[0]=OS_REJECTED;
+        break;
+    case OS_SET_LIVE_PID:
+        if(in[5]!=18u){p[0]=OS_BAD_LENGTH;break;}
+        {os_pid_config v={get32(in+6),get32(in+10),get32(in+14),get32(in+18),get16(in+22)};
+         if(!r->enable||!r->gate.enabled||!r->adc_good||r->drive.pending_fault||!os_set_live_pid(c,&v))p[0]=OS_REJECTED;}
+        break;
+    case OS_GET_LIVE_PID:
+        if(in[5]){p[0]=OS_BAD_LENGTH;break;}
+        {const os_pid_config *v=c->live_pid?&c->live_pid_cfg:&c->pid_cfg;
+         p[1]=(uint8_t)c->live_pid;put32(p+2,v->kp);put32(p+6,v->ki);put32(p+10,v->kd);put32(p+14,v->deadband);
+         p[18]=(uint8_t)v->output_limit;p[19]=(uint8_t)(v->output_limit>>8);len=20;}
+        break;
     default:return os_dispatch(c,in,n,out);
     }
     out[0]=0xa5;out[1]=0x5a;out[2]=OS_PROTO_VERSION;out[3]=in[3];out[4]=(uint8_t)(in[4]|0x80u);out[5]=len;

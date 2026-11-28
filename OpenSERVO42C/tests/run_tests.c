@@ -42,5 +42,23 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     assert(command(&r,&io,OS_SELECT_MODE,&position,1)==OS_REJECTED);
     assert(command(&r,&io,OS_DISABLE,0,0)==OS_OK);closed(&r,&m);assert(!r.drive.control.moving);
     assert(command(&r,&io,OS_GET_RUN,0,0)==OS_OK);
+    assert(os_run_init(&r,&io,&cfg,&offsets));
+    uint8_t limits[]={156,255,255,255,100,0,0,0,1}; /* -100..100 */
+    assert(command(&r,&io,OS_SET_LIMITS,limits,9)==OS_OK);
+    assert(command(&r,&io,OS_SELECT_MODE,&position,1)==OS_OK);
+    for(unsigned i=0;i<100;i++){adc(&r,&io,true);os_run_tick(&r,&io,i,0,true,0,true,true,false);}
+    assert(command(&r,&io,OS_ARM,0,0)==OS_OK);
+    assert(command(&r,&io,OS_SET_LIMITS,limits,9)==OS_REJECTED);
+    uint8_t beyond[]={101,0,0,0};assert(command(&r,&io,OS_MOVE_ABS,beyond,4)==OS_REJECTED);
+    uint8_t gains[]={0,8,0,0,0,0,0,0,0,0,0,0,2,0,0,0,244,1};
+    assert(command(&r,&io,OS_SET_LIVE_PID,gains,18)==OS_OK&&r.drive.control.live_pid);
+    assert(r.drive.control.pid_cfg.kp==4096&&r.drive.control.live_pid_cfg.kp==2048);
+    assert(command(&r,&io,OS_GET_LIVE_PID,0,0)==OS_OK);
+    adc(&r,&io,true);os_run_tick(&r,&io,100,101,true,0,true,true,false);
+    assert(r.drive.control.faults&OS_F_TRAVEL);closed(&r,&m);assert(!r.drive.control.live_pid);
+    assert(command(&r,&io,OS_CONFIRM_REFERENCE,move,4)==OS_REJECTED);
+    assert(os_run_init(&r,&io,&cfg,&offsets));
+    for(unsigned i=0;i<100;i++)tick(&r,&io,i,false);
+    assert(command(&r,&io,OS_CONFIRM_REFERENCE,move,4)==OS_OK&&r.drive.encoder.position==40);
     puts("scheduler tests passed");return 0;
 }

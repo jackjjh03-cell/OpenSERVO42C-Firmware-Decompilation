@@ -21,8 +21,12 @@ typedef struct {
     uint8_t critical; /* trusted HAL only; not a UART input */
     bool reference_valid, travel_violation, enable_input, feedback_valid;
 } os_sample;
+typedef struct { int32_t minimum,maximum; bool enabled; } os_limits;
 typedef struct {
     os_config cfg;
+    os_limits limits;
+    os_pid_config live_pid_cfg;
+    bool live_pid;
     os_pid_config pid_cfg;
     os_motion_config motion_cfg;
     os_pid pid;
@@ -39,6 +43,8 @@ void os_init(os_controller *c);
 bool os_config_valid(const os_config *v);
 bool os_configure(os_controller *c, const os_config *v);
 bool os_set_pid(os_controller *c,const os_pid_config *v);
+bool os_set_live_pid(os_controller *c,const os_pid_config *v);
+bool os_set_limits(os_controller *c,const os_limits *v);
 bool os_set_motion(os_controller *c,const os_motion_config *v);
 bool os_select_mode(os_controller *c, os_mode m);
 bool os_arm(os_controller *c);
