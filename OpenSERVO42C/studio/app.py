@@ -7,7 +7,9 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from tkinter import ttk, messagebox, filedialog
 from . import protocol as p
-from .client import ControllerClient, MODE_NAMES
+from .client import ControllerClient, MODE_NAMES, LinkError, DeviceRejected
+from .session import probe
+from . import preferences
 from .tuning import analyze
 from .tuning_trials import PROFILES, rank_trials
 from .gain_search import suggest
@@ -34,11 +36,14 @@ def fault_names(mask):
 
 
 class Studio:
-    def __init__(self, root, opener=ControllerClient.open):
+    def __init__(self, root, opener=ControllerClient.open, preferences_path=None):
         self.root, self.opener = root, opener
         self.worker = ThreadPoolExecutor(max_workers=1)
         self.client = None  # accessed by serial worker only
         self.connected = False
+        self.link_uncertain=False; self.recovery=None
+        self.preferences_path=preferences_path or preferences.path()
+        prefs=preferences.load(self.preferences_path)
         self.future = None
         self.pending = None
         self.cancel_trial = Event()
@@ -60,12 +65,16 @@ class Studio:
         style.map("TNotebook.Tab", background=[("selected", "#47576b")])
         root.configure(background="#20252d")
         bar = ttk.Frame(root, padding=10); bar.pack(fill="x")
-        self.port = tk.StringVar(value="COM3")
+        self.port = tk.StringVar(value=prefs["port"])
+        self.connection_text=tk.StringVar(value="DISCONNECTED")
         ttk.Label(bar, text="Serial port").pack(side="left")
-        ttk.Entry(bar, textvariable=self.port, width=15).pack(side="left", padx=5)
+        self.port_picker=ttk.Combobox(bar,textvariable=self.port,width=18)
+        self.port_picker.pack(side="left",padx=5)
+        ttk.Button(bar,text="Refresh ports",command=self.refresh_ports).pack(side="left",padx=4)
         ttk.Button(bar, text="Connect", command=self.connect).pack(side="left")
         ttk.Button(bar, text="Disconnect", command=self.disconnect).pack(side="left", padx=4)
         ttk.Button(bar, text="Disable output", command=self.disable).pack(side="right")
+        ttk.Label(bar,textvariable=self.connection_text).pack(side="right",padx=10)
         self.message = tk.StringVar(value="Disconnected — use an independent hardware stop.")
         ttk.Label(root, textvariable=self.message, padding=10, wraplength=940).pack(fill="x")
         tabs = ttk.Notebook(root); tabs.pack(fill="both", expand=True, padx=10, pady=5)
@@ -82,10 +91,20 @@ class Studio:
         self.travel_per_rev.trace_add("write",lambda *_:self.update_units())
         self.unit_text=tk.StringVar(value="Monitor units are independent of motion inputs. CSV uses counts.")
         ttk.Label(monitor,textvariable=self.unit_text,wraplength=850).pack(anchor="w")
+        graph_bar=ttk.Frame(monitor);graph_bar.pack(fill="x",pady=4)
+        self.graph_view=tk.StringVar(value=prefs["graph_view"])
+        self.graph_range=tk.StringVar(value=prefs["graph_range"])
+        self.graph_paused=tk.BooleanVar(value=False);self.frozen_history=[]
+        for var,options in ((self.graph_view,preferences.VIEWS),(self.graph_range,preferences.RANGES)):
+            picker=ttk.Combobox(graph_bar,textvariable=var,values=options,state="readonly",width=14)
+            picker.pack(side="left",padx=3);picker.bind("<<ComboboxSelected>>",lambda _:self.draw_graph())
+        ttk.Checkbutton(graph_bar,text="Freeze graph",variable=self.graph_paused,command=self.toggle_graph).pack(side="left",padx=5)
+        ttk.Button(graph_bar,text="Clear history",command=self.clear_history).pack(side="left")
         self.graph = tk.Canvas(monitor, background="#151a21", highlightthickness=0, height=280)
         self.graph.pack(fill="both", expand=True, pady=10)
         self.graph.bind("<Configure>", lambda _: self.draw_graph())
-        ttk.Label(monitor, text="Position: actual (blue), target (orange) · encoder counts").pack(anchor="w")
+        self.graph_caption=tk.StringVar(value="Position · counts")
+        ttk.Label(monitor,textvariable=self.graph_caption).pack(anchor="w")
         ttk.Button(monitor, text="Export recent samples to CSV", command=self.export_csv).pack(anchor="w", pady=5)
         motion = ttk.Frame(tabs, padding=12); tabs.add(motion, text="Motion")
         self.mode = tk.StringVar(value=MODE_NAMES[0])
@@ -222,8 +241,8 @@ class Studio:
     def submit(self, action, done=None, quiet=False, urgent=False, internal=False):
         if urgent:
             self.cancel_trial.set()
-        elif (self.closing or self.cal_active or self.lut_active) and not internal:
-            if not quiet: self.message.set("Calibration owns the connection. Stop or finish it first.")
+        elif (self.link_uncertain or self.recovery or self.closing or self.cal_active or self.lut_active) and not internal:
+            if not quiet: self.message.set("Connection needs recovery or calibration owns it. Stop, finish or reconnect first.")
             return False
         if not self.connected:
             if not quiet: self.message.set("Connect first.")
@@ -253,6 +272,13 @@ class Studio:
     def cancel_teach(self):
         self.submit(lambda c: c.write(p.TEACH_CANCEL), self.reset_captures)
 
+    def refresh_ports(self):
+        try:
+            from serial.tools import list_ports
+            self.port_picker["values"]=tuple(sorted(p.device for p in list_ports.comports()))
+        except Exception as exc:
+            self.message.set("Port enumeration failed: "+str(exc)+". Enter the port manually.")
+
     def connect(self):
         if self.connected or self.future is not None:
             return
@@ -260,15 +286,18 @@ class Studio:
         def opening():
             client = self.opener(device)
             try:
-                client.read(p.HELLO)
+                discovery=probe(client)
             except Exception:
                 client.close(); raise
             self.client = client
+            return discovery
+        self.connection_text.set("CONNECTING")
         self.future = self.worker.submit(opening)
         self.done, self.quiet = self.on_connected, False
 
-    def on_connected(self, _):
-        self.connected = True; self.snapshot = None; self.history.clear()
+    def on_connected(self, discovery):
+        self.connected = True; self.link_uncertain=False; self.snapshot = None; self.clear_history()
+        self.start=time.monotonic()
         self.trials.clear(); self.trial_pending = None; self.trial_monitor=False
         self.trace_rows=[];self.reset_captures(None)
         self.cal_active=False;self.cal_need_step=False;self.cal_sweep=None
@@ -277,24 +306,38 @@ class Studio:
         self.reset_search()
         self.update_units()
         self.detail_text.set("No diagnostic snapshot")
-        self.message.set("Connected. No motor commands sent.")
+        self.show_discovery(discovery)
+
+    def show_discovery(self, discovery):
+        self.recovery, version, monitor = discovery
+        if self.recovery:
+            self.connection_text.set("RECOVERY ONLY")
+            self.status_text.set(self.recovery+" — normal controls unavailable")
+            self.message.set("Interrupted commissioning or board fault. Verify hardware; Disable output is available. No commands sent automatically.")
+        else:
+            self.connection_text.set("CONNECTED {}.{}.{}".format(*version[:3]))
+            self.update_monitor(monitor)
+            self.message.set("Connected. No motor commands sent.")
 
     def disconnect(self):
         if self.lut_active:
             self.abort_lut();return
         if self.cal_active:
             self.stop_calibration();self.message.set("Calibration stop requested; verify output before disconnecting.");return
-        if not self.connected or self.future is not None:
+        if not self.connected:
             return
+        if self.future is not None:
+            self.message.set("Transaction in progress; disconnect after it completes.");return
         if (not self.snapshot or self.snapshot[0]["state"] == 2) and not messagebox.askyesno("Disconnect", "Disconnecting does not stop the motor. Continue?"):
             return
-        self.submit(lambda c: c.close(), self.on_disconnected)
+        self.submit(lambda c: c.close(), self.on_disconnected, internal=True)
 
     def on_disconnected(self, _):
         self.connected = False; self.snapshot = None; self.trial_monitor=False
+        self.link_uncertain=False;self.recovery=None;self.connection_text.set("DISCONNECTED")
         self.status_text.set("Disconnected — motor state unknown")
         self.calibration_text.set("No calibration snapshot")
-        self.update_units();self.detail_text.set("Disconnected")
+        self.update_units();self.detail_text.set("Disconnected");self.draw_graph()
 
     def fill_profile(self, groups):
         for (name, _, _, _), variables in zip(GROUPS,self.config_vars):
@@ -373,6 +416,10 @@ class Studio:
                 if done: done(value)
             except Exception as exc:
                 failed = True
+                if isinstance(exc,LinkError) and self.connected:
+                    self.link_uncertain=True;self.connection_text.set("LINK LOST / UNKNOWN")
+                elif not self.connected:
+                    self.connection_text.set("DISCONNECTED")
                 if self.trial_monitor:
                     self.trial_monitor=False
                     self.trial_text.set("Trial monitoring stopped: "+str(exc)+". Verify motor state; retrieve or clear the pending trial.")
@@ -388,7 +435,7 @@ class Studio:
                         self.pending=(lambda c:c.write(p.CAL_STOP),None,True,True)
                 self.message.set(str(exc)); self.snapshot = None
                 self.status_text.set("Controller state unknown — verify output independently.")
-                self.update_units()
+                self.update_units();self.draw_graph()
             if self.pending is not None:
                 action, callback, urgent, internal = self.pending; self.pending = None
                 if urgent or (not failed and not self.closing):
@@ -403,9 +450,11 @@ class Studio:
         elif self.connected and self.future is None and self.lut_active:
             transfer=self.lut_transfer
             self.submit(lambda c:transfer.advance(c),self.lut_advance,True,internal=True)
-        elif self.connected and self.future is None and time.monotonic() >= self.next_poll:
+        elif self.connected and not self.link_uncertain and self.future is None and time.monotonic() >= self.next_poll:
             self.next_poll = time.monotonic() + 0.25
-            if self.cal_active:
+            if self.recovery:
+                self.submit(probe,self.show_discovery,True,internal=True)
+            elif self.cal_active:
                 if self.cal_need_step:
                     self.cal_need_step=False
                     self.submit(lambda c:c.write(p.CAL_STEP),quiet=True,internal=True)
@@ -425,6 +474,7 @@ class Studio:
         state = states[s["state"]] if s["state"] < len(states) else "Unknown"
         mode = MODE_NAMES[s["mode"]] if s["mode"] < len(MODE_NAMES) else "Unknown"
         self.status_text.set("{} · {} · PWM {} · EN {} · Reference {}\nActual {:,}   Target {:,}   Speed {:,} counts/s   Load {:.1f}%\nFaults: {}   Pending: {}   Missed ticks: {}".format(state,mode,"on" if r["flags"]&1 else "off","on" if r["flags"]&2 else "off","valid" if r["flags"]&32 else "unconfirmed",s["actual"],s["target"],s["speed_counts_s"],s["load_permille"]/10,fault_names(s["faults"]),fault_names(r["pending_fault"]),r["missed_ticks"]))
+        self.status_text.set(self.status_text.get()+"\nWarnings: {}   Observed: {}   ADC: {}   Phase: {}".format(fault_names(s["warnings"]),fault_names(s["observed"]),"fresh" if r["flags"]&4 else "not fresh","valid" if r["flags"]&8 else "invalid"))
         self.update_units()
         self.history.append((time.monotonic()-self.start,s["actual"],s["target"],s["speed_counts_s"],s["load_permille"]))
         self.draw_graph()
@@ -438,8 +488,16 @@ class Studio:
         except ValueError as exc:self.unit_text.set(str(exc))
 
     def read_diagnostics(self):
+        recovery=self.recovery
         def read(c):
-            return c.read(p.GET_BENCH),c.read(p.GET_TIMING),c.read(p.GET_STORAGE),c.read(p.LUT_STATUS)
+            bench=c.read(p.GET_BENCH)
+            if recovery:return bench,None,None,None
+            def optional(op):
+                try:return c.read(op)
+                except DeviceRejected as exc:
+                    if exc.status==3:return None
+                    raise
+            return bench,optional(p.GET_TIMING),optional(p.GET_STORAGE),optional(p.LUT_STATUS)
         def show(data):
             bench,timing,storage,lut=data
             b=dict(zip(p.BENCH_FIELDS,bench));hz=b["core_hz"]
@@ -447,16 +505,21 @@ class Studio:
                    "ADC scale: {} | Raw slots: {} / {} | Zero offsets: {} / {}".format(b["scale"],b["slot1"],b["slot2"],b["offset1"],b["offset2"]),
                    "Encoder raw: {} | Calibrated: {} | Status: {} | STEP counter: {}".format(b["raw_angle"],b["cal_angle"],b["encoder_status"],b["pulse"]),
                    "Missed ticks: {} | UART dropped: {} | Board status: {}".format(b["missed_ticks"],b["uart_dropped"],b["board_status"])]
-            for i,name in enumerate(("Current loop","Position loop","Command handler")):
-                peak,overruns=timing[2*i:2*i+2]
-                lines.append("{}: {} cycles peak{} | {} observed overruns".format(name,peak," ({:.1f} us)".format(peak*1000000/hz) if hz else "",overruns))
-            lines.append("Settings: {} | Generation: {} | EN polarity: {}".format("loaded" if storage[0] else "defaults",storage[2],"high" if storage[1] else "low"))
-            lines.append("Calibration journal: {} | Upload active: {} | Written halfwords: {}".format({0:"legacy",1:"dirty",2:"verified"}.get(lut[2],"unknown"),bool(lut[1]),lut[0]))
+            if timing is not None:
+                for i,name in enumerate(("Current loop","Position loop","Command handler")):
+                    peak,overruns=timing[2*i:2*i+2]
+                    lines.append("{}: {} cycles peak{} | {} observed overruns".format(name,peak," ({:.1f} us)".format(peak*1000000/hz) if hz else "",overruns))
+            if storage is not None:
+                lines.append("Settings: {} | Generation: {} | EN polarity: {}".format("loaded" if storage[0] else "defaults",storage[2],"high" if storage[1] else "low"))
+            if lut is not None:
+                lines.append("Calibration journal: {} | Upload active: {} | Written halfwords: {}".format({0:"legacy",1:"dirty",2:"verified"}.get(lut[2],"unknown"),bool(lut[1]),lut[0]))
+            if timing is None or storage is None or lut is None:
+                lines.append("Some diagnostics are unavailable in this controller state or build.")
             self.detail_text.set("\n".join(lines))
-        self.submit(read,show)
+        self.submit(read,show,internal=bool(recovery) and not self.link_uncertain)
 
     def start_calibration(self):
-        if not self.connected or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
+        if not self.connected or self.link_uncertain or self.recovery or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
             self.message.set("Connect and wait for the current operation.");return
         try:
             current=int(self.cal_current.get()); sweep=Sweep(int(self.cal_hysteresis.get()))
@@ -496,7 +559,7 @@ class Studio:
             self.message.set("Calibration LUT exported. Not programmed to the controller.")
 
     def start_lut(self):
-        if not self.connected or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
+        if not self.connected or self.link_uncertain or self.recovery or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
             self.message.set("Connect and wait for the current operation.");return
         if self.cal_sweep is None or self.cal_sweep.lut is None:
             self.message.set("Complete a valid sweep on this controller first.");return
@@ -525,7 +588,7 @@ class Studio:
         self.calibration_text.set("Structural check: {}\nWinding: {} counts\nLargest adjacent change: {} counts\nForward: {}  Reverse: {}  Flat: {}\nMarkers: {}  Half-turn ambiguity: {}\nRead-only check; does not establish physical calibration accuracy.".format("passed" if flags == 3 else "failed",winding,jump,forward,reverse,flat,"valid" if flags&1 else "invalid","yes" if flags&4 else "no"))
 
     def start_trial(self):
-        if not self.connected or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
+        if not self.connected or self.link_uncertain or self.recovery or self.cal_active or self.lut_active or self.pending is not None or self.future is not None and not self.quiet:
             self.message.set("Connect and wait for the current transaction."); return
         if self.trial_pending is not None:
             self.message.set("Retrieve or clear the previous trial first."); return
@@ -663,18 +726,36 @@ class Studio:
                     writer=csv.writer(f);writer.writerow(("tick_ms","actual","target","demand","load_permille"));writer.writerows(self.trace_rows)
             except OSError as exc: self.message.set(str(exc))
 
+    def toggle_graph(self):
+        self.frozen_history=list(self.history) if self.graph_paused.get() else []
+        self.draw_graph()
+
+    def clear_history(self):
+        self.history.clear();self.frozen_history=[];self.graph_paused.set(False)
+        self.draw_graph()
+
     def draw_graph(self):
-        canvas = self.graph; canvas.delete("all")
-        rows = list(self.history)[-240:]
-        if len(rows)<2: return
-        w,h = max(canvas.winfo_width()-12,1), max(canvas.winfo_height()-24,1)
-        lo = min(min(r[1],r[2]) for r in rows); hi = max(max(r[1],r[2]) for r in rows)
-        if hi==lo: hi+=1
-        for col,color in ((1,"#66b8f5"),(2,"#eea34a")):
-            points = [coord for i,r in enumerate(rows) for coord in (6+w*(r[0]-rows[0][0])/max(rows[-1][0]-rows[0][0],0.001), 12+h*(hi-r[col])/(hi-lo))]
+        canvas=self.graph;canvas.delete("all")
+        view=self.graph_view.get();seconds=int(self.graph_range.get().split()[0])
+        history=self.frozen_history if self.graph_paused.get() else self.history
+        rows,series=preferences.graph_series(history,seconds,view)
+        unit={"Position":"counts","Error":"counts","Speed":"counts/s","Load":"%"}[view]
+        self.graph_caption.set(view+" · "+unit+" · "+self.graph_range.get()+" · "+(", ".join(name for _,name,_ in series))+ (" · frozen" if self.graph_paused.get() else "")+(" · stale" if not self.connected or self.link_uncertain else ""))
+        if len(rows)<2:
+            canvas.create_text(12,12,text="Waiting for position samples",fill="#b4c0ce",anchor="nw");return
+        left,top=84,18;w=max(canvas.winfo_width()-left-18,1);h=max(canvas.winfo_height()-top-32,1)
+        lo=min(r[col] for r in rows for col,_,_ in series);hi=max(r[col] for r in rows for col,_,_ in series)
+        if hi==lo:lo-=1;hi+=1
+        for i in range(5):
+            y=top+h*i/4;value=hi-(hi-lo)*i/4
+            canvas.create_line(left,y,left+w,y,fill="#303844")
+            canvas.create_text(left-6,y,text="{:.5g}".format(value),fill="#b4c0ce",anchor="e")
+            x=left+w*i/4
+            canvas.create_text(x,top+h+10,text="{:g}s".format(-seconds+seconds*i/4),fill="#b4c0ce",anchor="n")
+        end=rows[-1][0];start=end-seconds
+        for col,name,color in series:
+            points=[v for r in rows for v in (left+w*(r[0]-start)/seconds,top+h*(hi-r[col])/(hi-lo))]
             canvas.create_line(*points,fill=color,width=2)
-        canvas.create_text(8,8,text=str(hi),fill="#b4c0ce",anchor="nw")
-        canvas.create_text(8,h+12,text=str(lo),fill="#b4c0ce",anchor="sw")
 
     def export_csv(self):
         path = filedialog.asksaveasfilename(defaultextension=".csv",filetypes=[("CSV","*.csv")])
@@ -689,6 +770,10 @@ class Studio:
             return
         if self.cal_active:self.stop_calibration()
         if self.lut_active:self.abort_lut()
+        try:
+            preferences.save(self.preferences_path,{"port":self.port.get(),"graph_range":self.graph_range.get(),"graph_view":self.graph_view.get()})
+        except OSError as exc:
+            messagebox.showwarning("Preferences",str(exc))
         self.cancel_trial.set()
         self.closing = True
 

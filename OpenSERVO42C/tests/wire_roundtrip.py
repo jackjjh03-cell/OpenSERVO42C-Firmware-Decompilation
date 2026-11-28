@@ -4,6 +4,8 @@ import subprocess
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from studio import protocol as p
+from studio.client import ControllerClient, DeviceRejected
+from studio.session import probe
 
 def main():
     proc = subprocess.Popen([sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
@@ -51,5 +53,36 @@ def main():
         proc.stdout.close()
     assert proc.returncode == 0
 
+def runtime_roundtrip():
+    # Bridge the actual Studio client to the C run dispatcher, not a Python
+    # emulation of opcodes. No physical pins are connected to this fixture.
+    proc=subprocess.Popen([sys.argv[1],"--run"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
+    class Pipe:
+        def write(self, packet):
+            proc.stdin.write(packet.hex()+"\n");proc.stdin.flush();return len(packet)
+        def read(self, size):return bytes.fromhex(proc.stdout.readline().strip())
+    try:
+        c=ControllerClient(Pipe())
+        recovery,version,monitor=probe(c)
+        assert recovery is None and version==(0,1,1,0)
+        assert monitor[0]['state']==0 and monitor[1]['flags']==0
+        c.write(p.SET_PID,2048,32,64,2,500)
+        assert c.read(p.GET_PID)==(2048,32,64,2,500)
+        c.write(p.SET_LIMITS,-1000,1000,1)
+        assert c.read(p.GET_LIMITS)==(-1000,1000,1)
+        for mode in range(6):
+            c.write(p.SELECT_MODE,mode)
+            assert c.status()['mode']==mode
+        for op,args in ((p.ARM,()),(p.MOVE_ABS,(10,)),(p.SET_RATE,(10,10)),(p.SET_TORQUE,(10,10))):
+            try:c.write(op,*args)
+            except DeviceRejected as exc:assert exc.status==2
+            else:raise AssertionError('Unarmed motion accepted')
+        c.write(p.DISABLE);assert c.run_status()['flags']&1==0
+        print('Studio client / runtime C dispatcher round-trip passed')
+    finally:
+        proc.stdin.close();proc.wait(timeout=5);proc.stdout.close()
+    assert proc.returncode==0
+
 if __name__ == "__main__":
     main()
+    runtime_roundtrip()

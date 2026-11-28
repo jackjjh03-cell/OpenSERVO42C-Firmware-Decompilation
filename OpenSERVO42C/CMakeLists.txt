@@ -133,3 +133,6 @@ set_tests_properties(studio_queue PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_
 
 add_test(NAME export_hex COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_export_hex.py)
 set_tests_properties(export_hex PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_test(NAME studio_session COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_studio_session.py)
+set_tests_properties(studio_session PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")

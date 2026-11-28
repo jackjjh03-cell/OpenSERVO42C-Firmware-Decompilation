@@ -15,7 +15,7 @@ class Worker:
 class QueueTests(unittest.TestCase):
     def app(self):
         a=Studio.__new__(Studio)
-        a.connected=True;a.closing=False;a.cal_active=False;a.lut_active=False
+        a.connected=True;a.link_uncertain=False;a.recovery=None;a.closing=False;a.cal_active=False;a.lut_active=False
         a.cancel_trial=Event();a.future=None;a.pending=None;a.quiet=True
         a.worker=Worker();a.message=Message();a.client=None
         return a
@@ -39,3 +39,9 @@ class QueueTests(unittest.TestCase):
     def test_closing_admission(self):
         a=self.app();a.closing=True
         self.assertFalse(a.submit(lambda c:None));self.assertTrue(a.submit(lambda c:None,internal=True))
+
+    def test_uncertain_or_recovery_blocks_ordinary_commands(self):
+        for name,value in (('link_uncertain',True),('recovery','LUT upload')):
+            a=self.app();setattr(a,name,value)
+            self.assertFalse(a.submit(lambda c:None));self.assertIsNone(a.future)
+            self.assertTrue(a.submit(lambda c:None,urgent=True))
