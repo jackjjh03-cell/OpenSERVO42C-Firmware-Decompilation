@@ -28,7 +28,8 @@ def main():
         objects=[]
         for index,src in enumerate(files):
             obj=out/('module_%d.o'%index)
-            flags=['-Wall','-Wextra','-Werror','-Wconversion','-Wsign-conversion','-ffreestanding','-fno-builtin','-ffunction-sections','-fdata-sections'] if src.suffix=='.c' else []
+            # Bare-metal build: omit frame chains to save code and a register.
+            flags=['-Wall','-Wextra','-Werror','-Wconversion','-Wsign-conversion','-ffreestanding','-fno-builtin','-fomit-frame-pointer','-ffunction-sections','-fdata-sections'] if src.suffix=='.c' else []
             if args.motor and src.name=='bringup_main.c':
                 flags.append('-DOS_MOTOR_RUNTIME=1')
             # Keep the application entry point separate to avoid LTO duplication.

@@ -21,7 +21,7 @@ def main():
                 obj = out / (group + '_' + src.stem + '.o')
                 subprocess.run([os.getenv('ARM_CLANG', 'clang'), '--target=arm-none-eabi',
                                 '-mcpu=cortex-m0plus', '-mthumb', '-Oz', '-ffreestanding',
-                                '-fno-builtin', '-ffunction-sections', '-fdata-sections',
+                                '-fno-builtin', '-fomit-frame-pointer', '-ffunction-sections', '-fdata-sections',
                                 '-Wall', '-Wextra', '-Werror', '-Wconversion', '-Wsign-conversion',
                                 '-I', str(FIRMWARE / 'include'), '-c', str(src), '-o', str(obj)], check=True)
                 objects.append(obj)
