@@ -1,0 +1,11 @@
+# Portable motion and PID modules
+
+Two standalone rest-to-rest trajectories are implemented with integer math: trapezoidal velocity (separate acceleration and deceleration), and a quintic S-curve (continuous velocity and acceleration, bounded jerk). The quintic is symmetric and uses the smaller acceleration/deceleration limit; it is deliberately conservative, not yet a time-optimal seven-segment planner. Limits apply to the continuous design; sampled integer positions have count quantization. Runtime tick enforces monotonicity and reaches the requested endpoint. Initial development bounds are one million calibrated counts per move and 600 seconds; these are arithmetic/test limits, not motor ratings.
+
+The position PID uses Q12 gains at a nominal 1 ms sample, derivative on measurement to avoid setpoint kick, clamped integral with conditional anti-windup and stationary deadband. The signed demand is not an ampere value. Gains and limits are development values only. Holding current and derivative filtering require further design; do not rely on deadband to hold a gravity load.
+
+These modules are separate from the protection state machine and UART dispatch for now. The next integration must enforce explicit control ownership, feedback validity, travel reference, motion cancellation, gain-update atomicity and safe current limits. External CNC pulses must not be reshaped. Benchmark 64-bit arithmetic and divide helper cost on the HC32L130 before using either module in a timed interrupt. No power-stage registers are touched.
+
+Original encoder evidence: development/factory/src/encoder_io.c uses SPI registers at 0x40000804/08/0c, reads addresses 0x83 and 0x84, and returns zero on timeout. Zero is also a legal angle: the new driver must report validity separately, release chip select on every exit, check encoder status and reject stale feedback.
+
+Local validation: native C compile with strict warnings and address/undefined behavior sanitizers; endpoint, negative travel, zero move, saturation, anti-windup and invalid settings tests. A 1000-case randomized motion sweep found and helped correct a one-count reverse step in fixed-point S-curve generation. Both new modules also compiled to Cortex-M0+ objects; not linked into a hardware application and not timing-tested.
