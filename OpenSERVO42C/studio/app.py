@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox, filedialog
 from . import protocol as p
 from .client import ControllerClient, MODE_NAMES
+from .tuning import analyze
 
 GROUPS = (
     ("Protection", p.GET_CONFIG, p.SET_CONFIG, ("Following error (counts)", "Stall error (counts)", "Stall speed (counts/s)", "Stall load (permille)", "Fault dwell (ms)", "Clear dwell (ms)", "Policy (0 monitor, 1 warn, 2 protect)")),
@@ -112,6 +113,18 @@ class Studio:
         self.calibration_text = tk.StringVar(value="Calibration not inspected")
         ttk.Button(diagnostics, text="Inspect calibration", command=lambda: self.submit(lambda c: c.read(p.GET_CALIBRATION), self.show_calibration)).pack(anchor="w")
         ttk.Label(diagnostics, textvariable=self.calibration_text, justify="left", wraplength=850).pack(anchor="w", pady=10)
+        tuning = ttk.Frame(tabs, padding=12); tabs.add(tuning, text="Tuning trace")
+        self.trace_count = self.field(tuning, 0, "Samples (1–160)", "160")
+        self.trace_interval = self.field(tuning, 1, "Sample interval (ms)", "5")
+        self.trace_tolerance = self.field(tuning, 2, "Settling tolerance (counts)", "16")
+        self.trace_text = tk.StringVar(value="Start recording, command one position move, then disable output before retrieving the trace.")
+        self.trace_rows = []
+        ttk.Button(tuning,text="Start trace",command=lambda: self.numeric_command(p.TRACE_START,self.trace_count,self.trace_interval)).grid(row=3,column=0,sticky="w")
+        ttk.Button(tuning,text="Stop trace",command=lambda: self.command(p.TRACE_STOP)).grid(row=3,column=1,sticky="w")
+        ttk.Button(tuning,text="Trace status",command=lambda: self.submit(lambda c:c.read(p.TRACE_STATUS),self.show_trace_status)).grid(row=4,column=0,sticky="w")
+        ttk.Button(tuning,text="Retrieve and analyze",command=self.get_trace).grid(row=4,column=1,sticky="w")
+        ttk.Button(tuning,text="Export trace CSV",command=self.export_trace).grid(row=5,column=0,sticky="w")
+        ttk.Label(tuning,textvariable=self.trace_text,justify="left",wraplength=850).grid(row=6,column=0,columnspan=3,sticky="w",pady=12)
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(50, self.pump)
         self.next_poll = 0
@@ -243,6 +256,38 @@ class Studio:
     def show_calibration(self, data):
         winding, jump, forward, reverse, flat, flags = data
         self.calibration_text.set("Structural check: {}\nWinding: {} counts\nLargest adjacent change: {} counts\nForward: {}  Reverse: {}  Flat: {}\nMarkers: {}  Half-turn ambiguity: {}\nRead-only check; does not establish physical calibration accuracy.".format("passed" if flags == 3 else "failed",winding,jump,forward,reverse,flat,"valid" if flags&1 else "invalid","yes" if flags&4 else "no"))
+
+    def show_trace_status(self,data):
+        count,requested,interval,flags=data
+        self.trace_text.set("{} / {} samples at {} ms · {}{}".format(count,requested,interval,"recording" if flags&1 else "stopped"," · faulted" if flags&2 else ""))
+
+    def get_trace(self):
+        try: tolerance=int(self.trace_tolerance.get())
+        except ValueError:
+            self.message.set("Enter a valid settling tolerance."); return
+        if tolerance<1:
+            self.message.set("Tolerance must be positive."); return
+        def retrieve(c):
+            if c.run_status()["flags"]&1:
+                raise ValueError("Disable motor output before downloading a trace")
+            return c.read_trace()
+        def display(data):
+            rows,interval,faulted=data; self.trace_rows=rows
+            try:
+                result=analyze(rows,interval,faulted,tolerance)
+                self.trace_text.set("\n".join("{}: {}".format(k.replace("_"," "),round(v,2) if isinstance(v,float) else v if v is not None else "not settled") for k,v in result.items()))
+            except ValueError as exc: self.trace_text.set(str(exc)+". Raw trace can still be exported.")
+        self.submit(retrieve,display)
+
+    def export_trace(self):
+        if not self.trace_rows:
+            self.message.set("Retrieve a trace first."); return
+        path=filedialog.asksaveasfilename(defaultextension=".csv",filetypes=[("CSV","*.csv")])
+        if path:
+            try:
+                with open(path,"w",newline="",encoding="utf-8") as f:
+                    writer=csv.writer(f);writer.writerow(("tick_ms","actual","target","demand","load_permille"));writer.writerows(self.trace_rows)
+            except OSError as exc: self.message.set(str(exc))
 
     def draw_graph(self):
         canvas = self.graph; canvas.delete("all")

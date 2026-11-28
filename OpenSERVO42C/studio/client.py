@@ -56,6 +56,7 @@ READ_FORMATS = {
     p.GET_STORAGE: p.STORAGE_DATA, p.GET_DRIVE: p.DRIVE_DATA,
     p.GET_TIMING: p.TIMING_DATA, p.GET_RATE: p.RATE_DATA,
     p.GET_TORQUE: p.TORQUE_DATA, p.GET_CALIBRATION: p.CALIBRATION_DATA,
+    p.TRACE_STATUS: p.TRACE_STATUS_DATA,
 }
 WRITE_FORMATS = {
     p.SET_CONFIG: p.CONFIG, p.SET_PID: p.PID_CONFIG,
@@ -63,9 +64,9 @@ WRITE_FORMATS = {
     p.SET_LIVE_PID: p.PID_CONFIG, p.SET_DRIVE: p.DRIVE_DATA,
     p.SELECT_MODE: p.MODE_DATA, p.MOVE_ABS: p.POSITION_DATA,
     p.CONFIRM_REFERENCE: p.POSITION_DATA, p.TEACH_APPLY: p.TEACH_MARGIN_DATA,
-    p.SET_RATE: p.RATE_COMMAND, p.SET_TORQUE: p.TORQUE_COMMAND,
+    p.SET_RATE: p.RATE_COMMAND, p.SET_TORQUE: p.TORQUE_COMMAND, p.TRACE_START: p.TRACE_START_DATA,
 }
-NO_PAYLOAD = {p.DISABLE, p.ACK, p.ARM, p.TEACH_BEGIN, p.TEACH_CANCEL, p.SAVE_SETTINGS}
+NO_PAYLOAD = {p.DISABLE, p.ACK, p.ARM, p.TEACH_BEGIN, p.TEACH_CANCEL, p.SAVE_SETTINGS, p.TRACE_STOP}
 STATUS_FIELDS = ("state", "mode", "faults", "observed", "warnings", "target", "actual",
                  "speed_counts_s", "load_permille", "position_lost")
 RUN_FIELDS = ("flags", "pending_fault", "tick", "adc_count", "missed_ticks")
@@ -158,3 +159,17 @@ class ControllerClient:
         if len(data) != p.POSITION_DATA.size:
             raise LinkError("invalid capture reply")
         return p.POSITION_DATA.unpack(data)[0]
+
+    def read_trace(self):
+        count, requested, interval, flags = self.read(p.TRACE_STATUS)
+        if flags & 1 or count > requested or requested > 160:
+            raise LinkError("Trace is running or invalid")
+        rows = []
+        for offset in range(0, count, 2):
+            size = min(2, count-offset)
+            header = p.TRACE_READ_DATA.pack(offset,size)
+            data = self.request(p.TRACE_READ,header)
+            if len(data) != len(header)+size*p.TRACE_SAMPLE.size or data[:len(header)] != header:
+                raise LinkError("Trace reply mismatch")
+            rows.extend(p.TRACE_SAMPLE.iter_unpack(data[len(header):]))
+        return rows, interval, bool(flags & 2)

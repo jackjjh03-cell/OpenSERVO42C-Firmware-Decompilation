@@ -85,3 +85,9 @@ TORQUE_TIMEOUT, TORQUE_SPEED, TORQUE_LIMIT = 1, 2, 4
 
 GET_CALIBRATION = 35
 CALIBRATION_DATA = struct.Struct("<i4HB") # winding, maximum jump, forward, reverse, flat, flags
+
+TRACE_START, TRACE_STOP, TRACE_STATUS, TRACE_READ = range(36, 40)
+TRACE_START_DATA = struct.Struct("<HH")
+TRACE_STATUS_DATA = struct.Struct("<HHHB")
+TRACE_READ_DATA = struct.Struct("<HB")
+TRACE_SAMPLE = struct.Struct("<IiihH")

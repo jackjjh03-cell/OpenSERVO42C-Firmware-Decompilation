@@ -12,6 +12,7 @@
 #include "run_protocol.h"
 #include "timing.h"
 #include "calibration_check.h"
+#include "trace.h"
 #ifndef OS_MOTOR_RUNTIME
 #define OS_MOTOR_RUNTIME 0
 #endif
@@ -48,6 +49,7 @@ static void read_encoder(void){
 }
 #if OS_MOTOR_RUNTIME
 static uint32_t position_adc;
+static os_trace trace;
 static os_timing_stat timing[3]; /* current, position, foreground commands */
 static uint32_t timing_start(void){(void)REG(0xe000e010u);return REG(0xe000e018u);}
 static bool timing_end(unsigned index,uint32_t start){
@@ -129,6 +131,7 @@ void systick_irq(void){
     bench.flags=(uint8_t)((bench.flags&3u)|((REG(0x40020d44u)&128u)?4u:0u)|(fresh&&adc_valid?8u:0u));
     os_run_tick(&run,&io,ticks,bench.cal_angle,fresh&&(bench.flags&1u)!=0u,bench.pulse,input_enabled(),false,false);
     bench.missed_ticks=run.missed_ticks;
+    os_trace_tick(&trace,&run.drive.control,ticks);
     os_hc32_indicator(run.drive.control.state==OS_FAULT);
     if(timing_end(1,start)&&run.gate.enabled)timing_trip();
 #endif
@@ -153,6 +156,9 @@ static size_t storage_request(const uint8_t *in,size_t n,uint8_t *out){
     if(!os_flash_prepare_timing(&flash,bench.core_hz)){
         flash.write_permitted=false;unlock(m);return os_storage_dispatch(&session,&run,&store,false,in,n,out);
     }
+    #if OS_MOTOR_RUNTIME
+    trace.running=false;
+    #endif
     REG(0xe000e010u)=0;REG(0xe000e180u)=1u<<4;
     REG(0x40000c0cu)&=~1u;os_feedback_dma_stop(&io);
     size_t len=os_storage_dispatch(&session,&run,&store,true,in,n,out);
@@ -223,7 +229,8 @@ void os_target_main(void){
             if(status==OS_BOARD_OK){service_enable_edge();os_run_enable(&run,&io,input_enabled());}
 #endif
 #if OS_MOTOR_RUNTIME
-            if(in[4]==30u)len=timing_reply(in,n,out);
+            if(in[4]>=OS_TRACE_START&&in[4]<=OS_TRACE_READ)len=os_trace_dispatch(&trace,in,n,out);
+            else if(in[4]==30u)len=timing_reply(in,n,out);
             else
 #endif
             if(in[4]==35u)len=calibration_reply(in,n,out);
