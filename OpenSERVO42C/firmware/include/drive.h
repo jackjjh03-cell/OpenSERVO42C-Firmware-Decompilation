@@ -18,7 +18,7 @@ typedef struct {
     os_offsets offsets;
     os_encoder_tracker encoder;
     int32_t pulse_target, remainder;
-    uint16_t previous_pulse, phase, previous_angle, load;
+    uint16_t previous_pulse, phase, previous_angle, load, open_offset;
     bool configured, phase_valid, fast_phase_valid, inhibit_requested;
     uint8_t pending_fault;
 } os_drive;

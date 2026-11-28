@@ -59,7 +59,7 @@ bool os_arm(os_controller *c) {
     if(c->state!=OS_OFF || !c->hal_validated || c->faults ||
        c->position_lost || !c->latest.feedback_valid || !c->latest.enable_input ||
        c->observed || c->healthy_ms<c->cfg.clear_ms ||
-       (c->mode>OS_TORQUE) ||
+       (c->mode>OS_OPEN_LOOP) ||
        (c->mode!=OS_CNC && !c->latest.reference_valid) ||
        (c->limits.enabled && (!c->latest.reference_valid || !within(&c->limits,c->latest.actual)))) return false;
     stop_demand(c);c->command=c->latest.actual;c->motion=(os_motion){0};
@@ -155,6 +155,7 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
         sample.target=sample.actual;
         if(c->state==OS_ACTIVE&&!sample.reference_valid)critical|=OS_F_REFERENCE;
     }
+    if(c->state==OS_ACTIVE&&c->mode==OS_OPEN_LOOP&&!sample.reference_valid)critical|=OS_F_REFERENCE;
     if(c->limits.enabled){
         if(c->state==OS_ACTIVE&&!sample.reference_valid)critical|=OS_F_REFERENCE;
         if(sample.reference_valid&&(!within(&c->limits,sample.actual)||!within(&c->limits,sample.target)))sample.travel_violation=true;
@@ -188,6 +189,7 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
         c->still_ms=dwell(c->still_ms,unchanged && !c->moving);
         bool stationary=c->still_ms>=100u && magnitude(sample.speed_counts_s)<=c->cfg.stall_speed_counts_s;
         if(c->mode==OS_TORQUE)torque_tick(c,&sample);
+        else if(c->mode==OS_OPEN_LOOP)c->demand=0;
         else c->demand=os_pid_step(&c->pid,c->live_pid?&c->live_pid_cfg:&c->pid_cfg,sample.target,sample.actual,stationary);
     } else stop_demand(c);
 }

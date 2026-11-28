@@ -1,4 +1,5 @@
 #include "drive.h"
+#include "phase.h"
 #include <assert.h>
 #include <stdio.h>
 static const os_drive_config cfg={16,1000,500,2048,300,25,false,600};
@@ -44,5 +45,18 @@ int main(void){
     os_drive_position(&d,65530,true,65534,true,false,false);assert(d.control.faults&OS_F_ENCODER);
     os_drive_config invalid=cfg;invalid.geometry=0;
     assert(!os_drive_init(&d,&invalid,&offsets));assert(!os_drive_arm(&d));
+    assert(os_drive_init(&d,&cfg,&offsets));assert(os_select_mode(&d.control,OS_OPEN_LOOP));
+    for(unsigned i=0;i<100;i++)os_drive_position(&d,1000,true,0,true,true,false);
+    assert(os_drive_arm(&d));
+    assert(os_drive_current(&d,true,true,1000,true,2000,2048,2048,&p)&&!inactive(p));
+    uint16_t phase=d.phase;assert(phase==os_electrical_phase(1000,1000,false,0,25));
+    os_drive_position(&d,1100,true,0,true,true,false);
+    assert(os_drive_current(&d,true,true,1100,true,2000,2048,2048,&p)&&d.phase==phase);
+    os_drive_position(&d,1100,true,16,true,true,false);
+    assert(d.pulse_target==327&&d.control.demand==500);
+    assert(os_drive_current(&d,true,true,1100,true,2000,2048,2048,&p));
+    assert(d.phase==os_electrical_phase(1327,1327,false,0,25));
+    os_drive_position(&d,1100,true,16,true,false,false);assert(d.control.faults&OS_F_REFERENCE);
+    assert(!os_drive_current(&d,true,true,1100,true,2000,2048,2048,&p)&&inactive(p));
     puts("drive integration passed");return 0;
 }

@@ -42,7 +42,7 @@ void os_drive_position(os_drive *d,uint16_t angle,bool angle_valid,uint16_t puls
     int32_t actual=valid?(int32_t)d->encoder.position:d->control.latest.actual;
     uint8_t critical=d->pending_fault;d->pending_fault=0;
     if(d->inhibit_requested){enable=false;d->inhibit_requested=false;}
-    if(d->control.state==OS_ACTIVE && d->control.mode==OS_CNC && enable){
+    if(d->control.state==OS_ACTIVE && (d->control.mode==OS_CNC||d->control.mode==OS_OPEN_LOOP) && enable){
         if(!pulse_update(d,pulse))critical|=OS_F_TIMING;
     }else{
         d->previous_pulse=pulse;d->pulse_target=actual;d->remainder=0;
@@ -51,9 +51,15 @@ void os_drive_position(os_drive *d,uint16_t angle,bool angle_valid,uint16_t puls
         .load_permille=d->load,.critical=critical,.reference_valid=reference,.travel_violation=travel,
         .enable_input=enable,.feedback_valid=valid};
     os_tick_1ms(&d->control,&sample);
+    if(d->control.state==OS_ACTIVE&&d->control.mode==OS_OPEN_LOOP)d->control.demand=d->cfg.phase_limit;
     if(d->control.state!=OS_ACTIVE)d->fast_phase_valid=false;
 }
-bool os_drive_arm(os_drive *d){return d->configured&&d->phase_valid&&!d->pending_fault&&!d->inhibit_requested&&os_arm(&d->control);}
+bool os_drive_arm(os_drive *d){
+    if(!d->configured||!d->phase_valid||d->pending_fault||d->inhibit_requested||!os_arm(&d->control))return false;
+    /* Align the commanded field with the measured rotor angle at arm. */
+    d->open_offset=(uint16_t)((uint32_t)d->encoder.previous-(uint32_t)d->pulse_target);
+    return true;
+}
 bool os_drive_confirm_reference(os_drive *d,int32_t position,uint16_t angle,uint16_t pulse){
     os_controller *c=&d->control;
     if(!d->configured||c->state!=OS_OFF||c->faults||c->latest.enable_input||!c->latest.feedback_valid||
@@ -85,9 +91,16 @@ bool os_drive_current(os_drive *d,bool enable,bool angle_valid,uint16_t angle,bo
     /* Bound requested vector magnitude independently of PID settings. */
     int32_t limit=d->cfg.phase_limit;
     if(demand>limit)demand=limit;else if(demand< -limit)demand=-limit;
-    d->phase=os_electrical_phase(angle,d->previous_angle,d->fast_phase_valid,demand,d->cfg.geometry);
+    os_pair target={0,demand};
+    if(d->control.mode==OS_OPEN_LOOP){
+        /* Open-loop position: command the field from STEP/DIR, not the
+         * measured rotor position. Encoder and current protection stay on. */
+        uint16_t commanded=(uint16_t)((uint32_t)d->pulse_target+d->open_offset);
+        d->phase=os_electrical_phase(commanded,commanded,false,0,d->cfg.geometry);
+        target=(os_pair){limit,0};
+    }else d->phase=os_electrical_phase(angle,d->previous_angle,d->fast_phase_valid,demand,d->cfg.geometry);
     d->previous_angle=angle;d->fast_phase_valid=true;
-    if(!os_current_step(feedback,(os_pair){0,demand},os_sine_q14(d->phase),os_sine_q14((uint16_t)(d->phase+256u)),
+    if(!os_current_step(feedback,target,os_sine_q14(d->phase),os_sine_q14((uint16_t)(d->phase+256u)),
             d->cfg.current_gain_q11,scale,d->cfg.compare_limit,p)){
         d->pending_fault|=OS_F_ELECTRICAL;return false;
     }
