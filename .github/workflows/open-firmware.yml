@@ -1,0 +1,19 @@
+name: OpenSERVO42C core
+on:
+  push:
+    branches: [open-firmware]
+    paths:
+      - 'OpenSERVO42C/**'
+      - '.github/workflows/open-firmware.yml'
+  workflow_dispatch:
+jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S OpenSERVO42C -B build/open
+      - name: Build
+        run: cmake --build build/open
+      - name: Test
+        run: ctest --test-dir build/open --output-on-failure
