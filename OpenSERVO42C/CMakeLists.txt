@@ -121,3 +121,6 @@ set_tests_properties(studio_lut_transfer PROPERTIES WORKING_DIRECTORY "${CMAKE_C
 
 add_test(NAME studio_gain_search COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_gain_search.py)
 set_tests_properties(studio_gain_search PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_test(NAME studio_profiles COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_profiles.py)
+set_tests_properties(studio_profiles PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")

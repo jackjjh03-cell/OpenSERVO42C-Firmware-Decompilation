@@ -13,6 +13,7 @@ from .gain_search import suggest
 from .trial_capture import begin_trial, finish_trial
 from .sweep import Sweep
 from .lut_transfer import LutTransfer
+from . import profiles
 
 GROUPS = (
     ("Protection", p.GET_CONFIG, p.SET_CONFIG, ("Following error (counts)", "Stall error (counts)", "Stall speed (counts/s)", "Stall load (permille)", "Fault dwell (ms)", "Clear dwell (ms)", "Policy (0 monitor, 1 warn, 2 protect)")),
@@ -100,6 +101,10 @@ class Studio:
             ttk.Button(panel, text="Read controller", command=lambda g=get,v=variables: self.submit(lambda c: c.read(g), lambda data: self.fill(v,data))).grid(row=len(labels), column=0, sticky="w", pady=10)
             ttk.Button(panel, text="Apply to RAM", command=lambda o=put,v=variables: self.numeric_command(o,*v)).grid(row=len(labels), column=1, sticky="w")
         ttk.Button(settings, text="Save current configuration to controller", command=self.save).pack(anchor="w", pady=8)
+        profile_bar=ttk.Frame(settings);profile_bar.pack(fill="x",pady=4)
+        ttk.Button(profile_bar,text="Read all RAM settings",command=self.read_profile).pack(side="left")
+        ttk.Button(profile_bar,text="Export controller profile",command=self.export_profile).pack(side="left",padx=4)
+        ttk.Button(profile_bar,text="Load profile into editors",command=self.import_profile).pack(side="left")
         teach = ttk.Frame(tabs, padding=12); tabs.add(teach, text="Teach travel")
         ttk.Label(teach, text="Disable motor output and external EN. Establish a known reference, then move the mechanism by hand to each endpoint. Apply limits before saving. Saving invalidates the position reference.", wraplength=850).grid(row=0, column=0, columnspan=3, sticky="w", pady=8)
         self.reference = self.field(teach, 1, "Known reference (counts)", "0")
@@ -251,6 +256,33 @@ class Studio:
     def on_disconnected(self, _):
         self.connected = False; self.snapshot = None
         self.status_text.set("Disconnected — motor state unknown")
+
+    def fill_profile(self, groups):
+        for (name, _, _, _), variables in zip(GROUPS,self.config_vars):
+            self.fill(variables,groups[name])
+
+    def read_profile(self):
+        self.submit(profiles.capture,self.fill_profile)
+
+    def export_profile(self):
+        if not self.connected:
+            self.message.set("Connect first.");return
+        path=filedialog.asksaveasfilename(defaultextension=".json",filetypes=[("Controller profile","*.json")])
+        if not path:return
+        def save_profile(groups):
+            with open(path,"w",encoding="utf-8") as f:f.write(profiles.dumps(groups))
+            self.message.set("Current RAM settings exported. Calibration and reference are not included.")
+        self.submit(profiles.capture,save_profile)
+
+    def import_profile(self):
+        path=filedialog.askopenfilename(filetypes=[("Controller profile","*.json")])
+        if not path:return
+        try:
+            with open(path,"r",encoding="utf-8") as f:groups=profiles.loads(f.read(65537))
+        except (OSError,ValueError) as exc:
+            self.message.set(str(exc));return
+        self.fill_profile(groups)
+        self.message.set("Profile loaded into editors only. Review drive, EN polarity and travel limits for this machine before applying each group.")
 
     def command(self, opcode, *values):
         self.submit(lambda c: c.write(opcode,*values))
