@@ -14,3 +14,5 @@ Python tests require Python 3.8+ and no external dependencies. Studio's serial t
 See [hardware evidence](docs/hardware.md), [protocol](docs/protocol.md), and [development requirements](docs/requirements.md). The original factory project remains unchanged.
 
 The portable [motion and PID modules](docs/motion-and-pid.md) now provide trapezoidal and quintic S-curve position trajectories and a fixed-point position regulator. They are integrated with the portable controller and share configuration commands with the Python codec. Physical UART and motor output remain unimplemented.
+
+The [MT6816 encoder layer](docs/encoder.md) includes a checked SPI decoder, rollover tracker and a separate HC32 register transport awaiting hardware initialization and validation.
