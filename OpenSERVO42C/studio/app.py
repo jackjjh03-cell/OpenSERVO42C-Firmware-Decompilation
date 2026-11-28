@@ -11,7 +11,7 @@ from .client import ControllerClient, MODE_NAMES
 from .tuning import analyze
 from .tuning_trials import PROFILES, rank_trials
 from .gain_search import suggest
-from .trial_capture import begin_trial, finish_trial
+from .trial_capture import begin_trial, finish_trial, inspect_trial, apply_trial_gains
 from .sweep import Sweep
 from .lut_transfer import LutTransfer
 from . import profiles, units
@@ -159,7 +159,7 @@ class Studio:
         ttk.Button(tuning,text="Export trace CSV",command=self.export_trace).grid(row=5,column=0,sticky="w")
         ttk.Label(tuning,textvariable=self.trace_text,justify="left",wraplength=850).grid(row=6,column=0,columnspan=3,sticky="w",pady=12)
         trials = ttk.Frame(tabs, padding=12); tabs.add(trials, text="PID trials")
-        self.trials = []; self.trial_pending = None
+        self.trials = []; self.trial_pending = None; self.trial_monitor=False
         self.trial_end = self.field(trials, 0, "Test endpoint (absolute counts)", "")
         self.trial_count = self.field(trials, 1, "Samples (1–160)", "160")
         self.trial_interval = self.field(trials, 2, "Sample interval (ms)", "10")
@@ -173,8 +173,10 @@ class Studio:
         ttk.Button(trials,text="Retrieve completed trial",command=self.retrieve_trial).grid(row=6,column=1,sticky="w")
         ttk.Button(trials,text="Copy best gains to PID editor",command=self.copy_best_gains).grid(row=7,column=0,sticky="w")
         ttk.Button(trials,text="Clear trial comparisons",command=self.clear_trials).grid(row=7,column=1,sticky="w")
+        self.auto_retrieve=tk.BooleanVar(value=True)
+        ttk.Checkbutton(trials,text="Watch recording and retrieve after manual disable",variable=self.auto_retrieve).grid(row=8,column=0,columnspan=3,sticky="w")
         self.trial_text = tk.StringVar(value="Arm position mode at a known starting point with travel limits and protect policy enabled. Record one test move, wait for the trace to finish, disable output, then retrieve. Return to the same start and repeat with other gains. Low effort is not a noise measurement.")
-        ttk.Label(trials,textvariable=self.trial_text,justify="left",wraplength=850).grid(row=8,column=0,columnspan=3,sticky="w",pady=12)
+        ttk.Label(trials,textvariable=self.trial_text,justify="left",wraplength=850).grid(row=9,column=0,columnspan=3,sticky="w",pady=12)
         search = ttk.Frame(tabs, padding=12); tabs.add(search,text="Gain search")
         self.search_caps = self.field(search,0,"Upper Kp, Ki, Kd (Q12)","")
         self.search_step = self.field(search,1,"Initial step (% of upper bounds)","10")
@@ -184,7 +186,8 @@ class Studio:
         ttk.Button(search,text="Skip last candidate",command=self.skip_gains).grid(row=2,column=1,sticky="w")
         ttk.Button(search,text="Copy best measured gains",command=self.copy_best_gains).grid(row=3,column=0,sticky="w")
         ttk.Button(search,text="Reset skipped candidates",command=self.reset_search).grid(row=3,column=1,sticky="w")
-        ttk.Label(search,textvariable=self.search_text,justify="left",wraplength=850).grid(row=4,column=0,columnspan=3,sticky="w",pady=12)
+        ttk.Button(search,text="Apply suggested gains to RAM",command=self.apply_suggested).grid(row=4,column=0,sticky="w",pady=5)
+        ttk.Label(search,textvariable=self.search_text,justify="left",wraplength=850).grid(row=5,column=0,columnspan=3,sticky="w",pady=12)
         calibrate = ttk.Frame(tabs, padding=12); tabs.add(calibrate,text="Calibration")
         self.cal_active=False; self.cal_need_step=False; self.cal_sweep=None
         self.lut_active=False; self.lut_transfer=None
@@ -265,7 +268,7 @@ class Studio:
 
     def on_connected(self, _):
         self.connected = True; self.snapshot = None; self.history.clear()
-        self.trials.clear(); self.trial_pending = None
+        self.trials.clear(); self.trial_pending = None; self.trial_monitor=False
         self.trace_rows=[];self.reset_captures(None)
         self.cal_active=False;self.cal_need_step=False;self.cal_sweep=None
         self.lut_active=False;self.lut_transfer=None;self.lut_progress["value"]=0
@@ -287,7 +290,7 @@ class Studio:
         self.submit(lambda c: c.close(), self.on_disconnected)
 
     def on_disconnected(self, _):
-        self.connected = False; self.snapshot = None
+        self.connected = False; self.snapshot = None; self.trial_monitor=False
         self.status_text.set("Disconnected — motor state unknown")
         self.calibration_text.set("No calibration snapshot")
         self.update_units();self.detail_text.set("Disconnected")
@@ -369,6 +372,9 @@ class Studio:
                 if done: done(value)
             except Exception as exc:
                 failed = True
+                if self.trial_monitor:
+                    self.trial_monitor=False
+                    self.trial_text.set("Trial monitoring stopped: "+str(exc)+". Verify motor state; retrieve or clear the pending trial.")
                 if self.lut_active:
                     self.lut_active=False
                     self.cal_text.set("LUT transfer interrupted: "+str(exc)+". Calibration may be invalid; inspect and restart from the beginning. No write retried.")
@@ -404,6 +410,9 @@ class Studio:
                     self.submit(lambda c:c.write(p.CAL_STEP),quiet=True,internal=True)
                 else:
                     self.submit(lambda c:c.read(p.CAL_STATUS),self.calibration_sample,True,internal=True)
+            elif self.trial_monitor and self.trial_pending is not None:
+                capture=self.trial_pending
+                self.submit(lambda c:(inspect_trial(c,capture),c.status(),c.run_status()),lambda result:self.trial_progress(capture,result),True)
             else:
                 self.submit(lambda c: (c.status(),c.run_status()), self.update_monitor, True)
         self.root.after(50, self.pump)
@@ -525,25 +534,41 @@ class Studio:
             self.message.set("Enter integer trial settings, including a deliberate endpoint."); return
         if not messagebox.askyesno("Test move","Command one position move to {} counts with the currently applied gains? Verify clearance and the independent hardware stop.".format(args[0])):
             return
+        watch=self.auto_retrieve.get()
         def started(capture):
-            self.trial_pending=capture
-            self.trial_text.set("Test move accepted. Wait for trace completion, disable output, then retrieve. No gain changes have been sent.")
+            self.trial_pending=capture;self.trial_monitor=watch
+            self.trial_text.set("Test move accepted. Wait for trace completion, then disable output. "+("Studio will retrieve automatically." if watch else "Retrieve the trace manually."))
         # Each trial owns a separate cancellation token; a subsequent trial
         # cannot clear a cancellation requested for an older in-flight trial.
         token=Event();self.cancel_trial=token
         self.submit(lambda c:begin_trial(c,*args,cancelled=token.is_set),started)
 
+    def trial_progress(self,capture,result):
+        progress,status,run=result
+        self.update_monitor((status,run))
+        if capture is not self.trial_pending or not self.trial_monitor:return
+        recorded,stage,trial=progress
+        if stage=="complete":
+            self.trial_monitor=False;self.accept_trial(capture,trial)
+        elif stage=="disable":
+            self.trial_text.set("Recording complete. Disable output when mechanically safe; Studio will retrieve automatically.")
+        else:
+            self.trial_text.set("Recording {} / {} samples. Motor may be moving.".format(recorded,capture.count))
+
+    def accept_trial(self,capture,trial):
+        if capture is not self.trial_pending:return
+        try:
+            rank_trials(self.trials+[trial],self.trial_profile.get())
+        except ValueError as exc:
+            self.trial_text.set(str(exc)+". Clear comparisons to start a new group.");return
+        self.trials.append(trial);self.trial_pending=None;self.trial_monitor=False;self.show_trials()
+
     def retrieve_trial(self):
         capture=self.trial_pending
         if capture is None:
             self.message.set("Record a test move first."); return
-        def retrieved(trial):
-            try:
-                rank_trials(self.trials+[trial],self.trial_profile.get())
-            except ValueError as exc:
-                self.trial_text.set(str(exc)+". Clear comparisons to start a new group."); return
-            self.trials.append(trial);self.trial_pending=None;self.show_trials()
-        self.submit(lambda c:finish_trial(c,capture),retrieved)
+        if self.submit(lambda c:finish_trial(c,capture),lambda trial:self.accept_trial(capture,trial)):
+            self.trial_monitor=False
 
     def show_trials(self):
         if not self.trials:
@@ -564,7 +589,7 @@ class Studio:
 
     def clear_trials(self):
         if messagebox.askyesno("Clear comparisons","Clear recorded comparisons and the pending trial reference? This does not stop the motor or recording."):
-            self.trials.clear();self.trial_pending=None;self.show_trials();self.reset_search()
+            self.trials.clear();self.trial_pending=None;self.trial_monitor=False;self.show_trials();self.reset_search()
 
     def reset_search(self):
         self.search_candidate=None;self.search_rejected.clear()
@@ -583,6 +608,17 @@ class Studio:
             self.search_text.set("No untested neighbors remain within the chosen bounds and integer resolution. Best measured Kp/Ki/Kd: {}. This is a local search result, not proof of stability.".format(proposal.best[:3]));return
         self.fill(self.config_vars[1],proposal.candidate)
         self.search_text.set("Best measured: {}\nNext candidate: {}\nSearch steps: {}\nSkipped: {}\nCandidate copied to PID editor only. Review and apply while disabled, return to the same starting point, then record and retrieve another trial. If the candidate fails, disable output and skip it before continuing.".format(proposal.best[:3],proposal.candidate[:3],proposal.steps,len(self.search_rejected)))
+
+    def apply_suggested(self):
+        candidate=self.search_candidate
+        if candidate is None or not self.trials or self.trial_pending is not None:
+            self.message.set("Suggest a candidate and finish any pending trial first.");return
+        baseline=self.trials[0]
+        if not messagebox.askyesno("Apply trial gains","Apply Kp/Ki/Kd {} to RAM only? Disable external EN and output first. No arm, save or motion command will be sent.".format(candidate[:3])):return
+        def applied(gains):
+            self.fill(self.config_vars[1],gains)
+            self.search_text.set("Candidate {} applied and read back. Return to the same starting point, arm manually and record a trial.".format(gains[:3]))
+        self.submit(lambda c:apply_trial_gains(c,candidate,baseline),applied)
 
     def skip_gains(self):
         if self.search_candidate is None or self.search_candidate in {t.gains for t in self.trials}:

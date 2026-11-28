@@ -1,6 +1,6 @@
 import unittest
 from studio import protocol as p
-from studio.trial_capture import begin_trial, finish_trial
+from studio.trial_capture import begin_trial, finish_trial, inspect_trial, apply_trial_gains
 
 class Fake:
     def __init__(self):
@@ -50,3 +50,45 @@ class CaptureTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'cancelled'):
             begin_trial(c,100,9,2,5,8,cancelled=lambda:bool(c.writes))
         self.assertEqual(c.writes,[(p.TRACE_START,(9,2))])
+
+    def test_progress_and_manual_disable(self):
+        c=Fake();cap=self.begin(c)
+        self.assertEqual(inspect_trial(c,cap),(1,"recording",None))
+        c.trace=(9,9,2,8)
+        self.assertEqual(inspect_trial(c,cap),(9,"disable",None))
+        c.finish();n,stage,trial=inspect_trial(c,cap)
+        self.assertEqual((n,stage),(9,"complete"));self.assertEqual(trial.metrics['settling_ms'],2)
+        self.assertEqual(len(c.writes),2)  # progress never sends a command
+
+    def test_progress_rejects_interrupted_or_stuck(self):
+        c=Fake();cap=self.begin(c);c.tick=2000
+        with self.assertRaisesRegex(ValueError,'expected window'):inspect_trial(c,cap)
+        c.trace=(9,9,2,12)
+        with self.assertRaises(ValueError):inspect_trial(c,cap)
+        c.trace=(1,10,2,9)
+        with self.assertRaises(ValueError):inspect_trial(c,cap)
+
+    def test_apply_candidate_requires_disabled_matching_machine(self):
+        c=Fake();cap=self.begin(c);c.finish();baseline=finish_trial(c,cap)
+        candidate=(2048,0,64,2,500)
+        # SET_PID changes only normal gains in this simulated controller.
+        original=c.write
+        def write(op,*args):
+            original(op,*args)
+            if op==p.SET_PID:c.settings[p.GET_PID]=args
+        c.write=write
+        c.active=True
+        with self.assertRaises(ValueError):apply_trial_gains(c,candidate,baseline)
+        c.active=False
+        c.settings[p.GET_LIMITS]=(-2000,2000,1)
+        with self.assertRaises(ValueError):apply_trial_gains(c,candidate,baseline)
+        c.settings[p.GET_LIMITS]=baseline.context[3]
+        with self.assertRaises(ValueError):apply_trial_gains(c,(2048,0,64,2,501),baseline)
+        self.assertEqual(len(c.writes),2)
+        self.assertEqual(apply_trial_gains(c,candidate,baseline),candidate)
+        self.assertEqual(c.writes[-1],(p.SET_PID,candidate))
+
+    def test_apply_readback_mismatch_no_retry(self):
+        c=Fake();cap=self.begin(c);c.finish();baseline=finish_trial(c,cap)
+        with self.assertRaisesRegex(ValueError,'readback'):apply_trial_gains(c,(2048,0,64,2,500),baseline)
+        self.assertEqual(len(c.writes),3)

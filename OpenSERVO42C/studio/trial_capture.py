@@ -94,3 +94,52 @@ def finish_trial(client, capture):
         raise ValueError("Recording does not belong to the started trial")
     return make_trial(rows,interval,faulted,capture.gains,capture.context,capture.start,capture.end,
                       capture.tolerance,capture.tail_ms,capture.context[0][2])
+
+
+def inspect_trial(client, capture):
+    """One non-blocking progress check; never commands motion or disables output.
+
+    Return (recorded, stage, trial). The operator must disable the motor before
+    reading the trace; a completed trial is retrieved automatically when safe.
+    """
+    recorded, count, interval, flags = client.read(p.TRACE_STATUS)
+    if (count, interval) != (capture.count, capture.interval) or recorded > count:
+        raise ValueError("Trial recording changed")
+    if flags == QUALIFIED_STATUS|1 and recorded < count:
+        run = client.run_status()
+        if run['pending_fault'] or run['flags']&63 != 47:
+            raise ValueError("Output or feedback changed during trial")
+        elapsed = (run['tick']-capture.tick_before)&0xffffffff
+        if elapsed > (count+2)*interval+1000:
+            raise ValueError("Trial recording did not complete in its expected window")
+        return recorded, "recording", None
+    if flags != QUALIFIED_STATUS or recorded != count:
+        raise ValueError("Trial recording incomplete, faulted or interrupted")
+    status = client.status()
+    run = client.run_status()
+    if status['faults'] or run['pending_fault']:
+        raise ValueError("Controller fault after trial")
+    if status['state'] != 0 or run['flags']&1:
+        return recorded, "disable", None
+    return recorded, "complete", finish_trial(client, capture)
+
+
+def apply_trial_gains(client, candidate, baseline):
+    """Apply one explicitly selected candidate to RAM, without arming or saving."""
+    candidate = tuple(candidate)
+    if (len(candidate)!=5 or any(type(v) is not int for v in candidate) or
+            not all(0<=v<=1048576 for v in candidate[:3]) or candidate[3:]!=baseline.gains[3:]):
+        raise ValueError("Candidate must preserve the baseline deadband and output limit")
+    def check_disabled():
+        s, r = client.status(), client.run_status()
+        if s['state']!=0 or s['faults'] or r['pending_fault'] or r['flags']&19:
+            raise ValueError("Disable motor output and external EN before applying gains")
+    check_disabled()
+    current, context = configuration(client)
+    if context!=baseline.context or current[3:]!=baseline.gains[3:]:
+        raise ValueError("Machine configuration changed since baseline; record a new comparison group")
+    check_disabled()
+    client.write(p.SET_PID,*candidate)
+    if client.read(p.GET_PID)!=candidate:
+        raise ValueError("PID readback does not match the requested gains")
+    return candidate

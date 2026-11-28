@@ -21,11 +21,17 @@ static bool pulse_update(os_drive *d,uint16_t pulse){
     if(raw==32768u)return false; /* ambiguous half-turn of hardware counter */
     int32_t delta=raw<32768u?(int32_t)raw:(int32_t)raw-65536;
     if(d->cfg.reverse)delta=-delta;
-    int32_t denom=(int32_t)d->cfg.geometry*8*d->cfg.microsteps;
+    uint32_t denom=(uint32_t)d->cfg.geometry*8u*d->cfg.microsteps;
     int64_t numerator=(int64_t)delta*65536+d->remainder;
-    int64_t target=(int64_t)d->pulse_target+numerator/denom;
+    /* |delta| <= 32767 and |remainder| < denom <= 102400.
+     * The magnitude fits uint32_t even when the signed sum exceeds INT32_MAX.
+     * Divide in 32 bits, retaining C's truncation-toward-zero convention. */
+    bool negative=numerator<0;
+    uint32_t magnitude=(uint32_t)(negative?-numerator:numerator);
+    int32_t q=(int32_t)(magnitude/denom),rem=(int32_t)(magnitude%denom);
+    int64_t target=(int64_t)d->pulse_target+(negative?-q:q);
     if(target<INT32_MIN||target>INT32_MAX)return false;
-    d->pulse_target=(int32_t)target;d->remainder=(int32_t)(numerator%denom);return true;
+    d->pulse_target=(int32_t)target;d->remainder=negative?-rem:rem;return true;
 }
 void os_drive_position(os_drive *d,uint16_t angle,bool angle_valid,uint16_t pulse,bool enable,bool reference,bool travel){
     int64_t old=d->encoder.position;
