@@ -3,7 +3,8 @@
 #define MAX_TIME 600000u
 #define Q 1073741824LL
 static uint64_t ceil_div(uint64_t n,uint64_t d){return n/d+(n%d!=0u);}
-static uint32_t ramp(uint32_t v,uint32_t a){return (uint32_t)ceil_div((uint64_t)v*1000u,a);}
+/* v <= 1000000 and a <= 100000000: rounded numerator fits uint32_t. */
+static uint32_t ramp(uint32_t v,uint32_t a){return (v*1000u+a-1u)/a;}
 bool os_motion_config_valid(const os_motion_config *c){
     return c->speed>0 && c->speed<=1000000u && c->accel>0 && c->accel<=100000000u &&
         c->decel>0 && c->decel<=100000000u && c->jerk>0 && c->jerk<=1000000000u && c->curve<=OS_S_CURVE;
@@ -11,12 +12,9 @@ bool os_motion_config_valid(const os_motion_config *c){
 /* Quintic smoothstep: v<=2D/T, |a|<=6D/T^2, |j|<=60D/T^3.
  * Conservative duration; both acceleration limits enforced using the smaller.
  * No floating point. Planning runs outside the current-control ISR. */
-static bool smooth_fits(uint32_t d,uint32_t t,const os_motion_config *c){
-    uint32_t a=c->accel<c->decel?c->accel:c->decel;
+static bool smooth_fits(uint32_t t,uint32_t speed_time,uint64_t accel_time,uint64_t jerk_time){
     uint64_t t2=(uint64_t)t*t;
-    return t>=ceil_div((uint64_t)d*2000u,c->speed) &&
-        t2>=ceil_div((uint64_t)d*6000000u,a) &&
-        t2*t>=ceil_div((uint64_t)d*60000000000ULL,c->jerk);
+    return t>=speed_time && t2>=accel_time && t2*t>=jerk_time;
 }
 bool os_motion_plan(os_motion *m,int32_t start,int32_t end,const os_motion_config *c){
     if(!os_motion_config_valid(c))return false;
@@ -26,9 +24,14 @@ bool os_motion_plan(os_motion *m,int32_t start,int32_t end,const os_motion_confi
     os_motion p={.start=start,.end=end,.position=start,.distance=(uint32_t)d,.curve=c->curve};
     if(!d){*m=p;return true;}
     if(c->curve==OS_S_CURVE){
-        if(!smooth_fits(p.distance,MAX_TIME,c))return false;
+        /* Compute the invariant thresholds once, rather than dividing on
+         * every binary-search iteration while the foreground is serialized. */
+        uint32_t a=c->accel<c->decel?c->accel:c->decel;
+        uint32_t speed_time=(p.distance*2000u+c->speed-1u)/c->speed;
+        uint64_t accel_time=ceil_div(d*6000000u,a),jerk_time=ceil_div(d*60000000000ULL,c->jerk);
+        if(!smooth_fits(MAX_TIME,speed_time,accel_time,jerk_time))return false;
         uint32_t lo=1,hi=MAX_TIME;
-        while(lo<hi){uint32_t t=lo+(hi-lo)/2u;if(smooth_fits(p.distance,t,c))hi=t;else lo=t+1u;}
+        while(lo<hi){uint32_t t=lo+(hi-lo)/2u;if(smooth_fits(t,speed_time,accel_time,jerk_time))hi=t;else lo=t+1u;}
         p.total_ms=lo;
     }else{
         uint32_t lo=1,hi=c->speed;
@@ -38,7 +41,7 @@ bool os_motion_plan(os_motion *m,int32_t start,int32_t end,const os_motion_confi
             if(area<=d*2000u)lo=v;else hi=v-1u;
         }
         p.up_ms=ramp(lo,c->accel);p.down_ms=ramp(lo,c->decel);
-        uint64_t span=ceil_div(d*2000u,lo), ramps=(uint64_t)p.up_ms+p.down_ms;
+        uint64_t span=(p.distance*2000u+lo-1u)/lo, ramps=(uint64_t)p.up_ms+p.down_ms;
         p.cruise_ms=span>ramps?(uint32_t)ceil_div(span-ramps,2u):0u;
         uint64_t total=ramps+p.cruise_ms;
         if(total>MAX_TIME)return false;

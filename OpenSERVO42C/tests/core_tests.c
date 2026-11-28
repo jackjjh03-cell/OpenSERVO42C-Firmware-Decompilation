@@ -31,5 +31,12 @@ int main(void){
     req[6]^=1;assert(os_dispatch(&c,req,sizeof req,out)==0);
     assert(os_dispatch(&c,req,7,out)==0);
     os_init(&c);v=c.cfg;v.dwell_ms=0;assert(!os_configure(&c,&v));
+    /* The full signed-position span is UINT32_MAX, not a signed overflow. */
+    for(unsigned i=0;i<2u;i++){
+        setup(&c,&s);c.cfg.following_counts=UINT32_MAX;c.cfg.dwell_ms=1;
+        s.actual=i?INT32_MIN:INT32_MAX;s.target=i?INT32_MAX:INT32_MIN;
+        tick(&c,&s,1);assert(c.observed&OS_F_FOLLOW);
+        s.target+=i?-1:1;tick(&c,&s,1);assert(!(c.observed&OS_F_FOLLOW));
+    }
     return 0;
 }

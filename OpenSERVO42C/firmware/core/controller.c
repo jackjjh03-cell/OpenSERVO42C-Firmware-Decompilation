@@ -1,7 +1,8 @@
 #include "controller.h"
-static uint32_t magnitude(int64_t n) {
-    uint64_t u=(uint64_t)(n<0 ? -n : n);
-    return u>UINT32_MAX ? UINT32_MAX : (uint32_t)u;
+static uint32_t magnitude(int32_t n){return n<0?0u-(uint32_t)n:(uint32_t)n;}
+/* A difference between two signed 32-bit positions always fits uint32_t. */
+static uint32_t distance(int32_t a,int32_t b){
+    return a>=b?(uint32_t)a-(uint32_t)b:(uint32_t)b-(uint32_t)a;
 }
 static uint16_t dwell(uint16_t n, bool condition) {
     return !condition ? 0u : n==UINT16_MAX ? n : (uint16_t)(n+1u);
@@ -77,7 +78,7 @@ bool os_start_move(os_controller *c,int32_t end){
     if(c->state!=OS_ACTIVE || c->mode!=OS_POSITION || c->moving ||
        !c->latest.reference_valid || !c->latest.feedback_valid || !c->latest.enable_input ||
        c->latest.travel_violation || c->latest.speed_counts_s!=0 ||
-       magnitude((int64_t)c->command-c->latest.actual)>c->pid_cfg.deadband)return false;
+       distance(c->command,c->latest.actual)>c->pid_cfg.deadband)return false;
     if(!within(&c->limits,end)||!within(&c->limits,c->latest.actual)||!within(&c->limits,c->command))return false;
     if(!os_motion_plan(&c->motion,c->command,end,&c->motion_cfg))return false;
     c->moving=c->motion.total_ms!=0;return true;
@@ -170,7 +171,7 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
     }
     bool unchanged=sample.target==c->latest.target;
     c->latest=sample;
-    uint32_t error=magnitude((int64_t)sample.target-sample.actual);
+    uint32_t error=distance(sample.target,sample.actual);
     bool stall=error>=c->cfg.stall_error_counts &&
         magnitude(sample.speed_counts_s)<=c->cfg.stall_speed_counts_s &&
         sample.load_permille>=c->cfg.stall_load_permille;
