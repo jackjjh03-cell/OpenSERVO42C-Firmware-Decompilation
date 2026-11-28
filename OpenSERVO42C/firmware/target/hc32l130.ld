@@ -1,10 +1,12 @@
 /* Independent firmware layout. Keep all original persistent pages reserved. */
 ENTRY(reset_handler)
 MEMORY {
-  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x7a00
+  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x7600
   RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x2000
 }
-__flash_target = 0x7000; /* 28 KiB; 2.5 KiB application headroom */
+__flash_target = 0x7000; /* 28 KiB; 1.5 KiB code headroom before settings slots */
+__settings_slot0 = 0x7600;
+__settings_slot1 = 0x7800;
 __ram_static_target = 0x1000; /* 4 KiB review target, not a hard limit */
 __stack_top = ORIGIN(RAM) + LENGTH(RAM);
 __stack_floor = __stack_top - 0x800;
