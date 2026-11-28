@@ -47,12 +47,12 @@ void os_run_tick(os_run *r,const os_board_io *io,uint32_t now,uint16_t angle,boo
 void os_run_adc(os_run *r,const os_board_io *io,bool enable,bool angle_valid,uint16_t angle,bool valid,uint16_t scale,uint16_t slot2,uint16_t slot1){
     r->adc_count++;r->adc_seen=true;os_run_enable(r,io,enable);
     os_pair fb;
-    r->adc_good=r->drive.configured&&valid&&scale>=745u&&scale<=4095u&&os_current_feedback(&r->drive.offsets,slot2,slot1,&fb)&&mag(fb.a)<=r->drive.cfg.trip_limit&&mag(fb.b)<=r->drive.cfg.trip_limit;
+    r->adc_good=os_drive_feedback(&r->drive,valid,scale,slot2,slot1,&fb);
     if(!r->adc_good){trip(r,io,OS_F_ELECTRICAL);return;}
     if(!angle_valid&&(r->gate.enabled||r->teaching||r->reference_confirmed)){trip(r,io,OS_F_ENCODER);return;}
     if(r->drive.control.state!=OS_ACTIVE||!r->gate.enabled)return;
     os_pwm_compare p;
-    if(!os_drive_current(&r->drive,enable,angle_valid,angle,valid,scale,slot2,slot1,&p)){close_gate(r,io);return;}
+    if(!os_drive_current_checked(&r->drive,enable,angle_valid,angle,scale,fb,&p)){close_gate(r,io);return;}
     if(!os_gate_update(&r->gate,io,enable,&p))trip(r,io,OS_F_ELECTRICAL);
 }
 bool os_run_confirm_reference(os_run *r,int32_t position){

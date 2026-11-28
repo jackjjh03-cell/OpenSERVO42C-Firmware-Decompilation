@@ -1,5 +1,6 @@
 #include "run_protocol.h"
 size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t n,uint8_t *out){
+    if(n>=5u&&in[4]<=OS_GET_CONTROL&&in[4]!=OS_DISABLE&&in[4]!=OS_ACK)return os_dispatch(&r->drive.control,in,n,out);
     if(!os_frame_valid(in,n))return 0;
     uint8_t len=1u,*p=out+6;p[0]=OS_OK;
     os_controller *c=&r->drive.control;
@@ -41,14 +42,13 @@ size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t 
         break;
     case OS_SET_LIVE_PID:
         if(in[5]!=18u){p[0]=OS_BAD_LENGTH;break;}
-        {os_pid_config v={os_wire_get32(in+6),os_wire_get32(in+10),os_wire_get32(in+14),os_wire_get32(in+18),os_wire_get16(in+22)};
+        {os_pid_config v;os_wire_copy(&v,in+6,OS_PID_WIRE_BYTES);
          if(!r->enable||!r->gate.enabled||!r->adc_good||r->drive.pending_fault||!os_set_live_pid(c,&v))p[0]=OS_REJECTED;}
         break;
     case OS_GET_LIVE_PID:
         if(in[5]){p[0]=OS_BAD_LENGTH;break;}
         {const os_pid_config *v=c->live_pid?&c->live_pid_cfg:&c->pid_cfg;
-         p[1]=(uint8_t)c->live_pid;os_wire_put32(p+2,v->kp);os_wire_put32(p+6,v->ki);os_wire_put32(p+10,v->kd);os_wire_put32(p+14,v->deadband);
-         p[18]=(uint8_t)v->output_limit;p[19]=(uint8_t)(v->output_limit>>8);len=20;}
+         p[1]=(uint8_t)c->live_pid;os_wire_copy(p+2,v,OS_PID_WIRE_BYTES);len=20;}
         break;
     case OS_TEACH_BEGIN:
         if(in[5])p[0]=OS_BAD_LENGTH;

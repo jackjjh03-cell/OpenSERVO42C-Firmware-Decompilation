@@ -24,6 +24,9 @@ def main():
     try:
         assert send(p.HELLO) == bytes([0, 1, 1, 0])
         assert p.STATUS_DATA.unpack(send(p.STATUS))[0] == 0
+        config = (0x12345678,0x76543210,0xabcdef01,999,0x2345,0x3456,2)
+        assert send(p.SET_CONFIG,p.CONFIG.pack(*config)) == b""
+        assert send(p.GET_CONFIG) == p.CONFIG.pack(*config)
         gain = (1024, 32, 200, 3, 7000)
         assert send(p.SET_PID, p.PID_CONFIG.pack(*gain)) == b""
         assert p.PID_CONFIG.unpack(send(p.GET_PID)) == gain

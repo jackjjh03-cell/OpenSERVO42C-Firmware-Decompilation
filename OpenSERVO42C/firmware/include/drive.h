@@ -22,6 +22,7 @@ typedef struct {
     bool configured, phase_valid, fast_phase_valid, inhibit_requested;
     uint8_t pending_fault;
 } os_drive;
+bool os_drive_config_valid(const os_drive_config *cfg);
 bool os_drive_init(os_drive *d,const os_drive_config *cfg,const os_offsets *offsets);
 /* The target calls this with a fresh calibrated angle every 1 ms. */
 void os_drive_position(os_drive *d,uint16_t angle,bool angle_valid,uint16_t pulse,bool enable,bool reference,bool travel);
@@ -32,6 +33,10 @@ bool os_drive_confirm_reference(os_drive *d,int32_t position,uint16_t angle,uint
 void os_drive_disable(os_drive *d);
 /* Called on every fresh ADC sample. False requires immediate output inhibit.
  * No MMIO in this module. A critical fault remains latched across subsequent samples. */
+/* Split path: validate every ADC conversion once, then regulate only with
+ * feedback from the same successful validation. Calls must be serialized. */
+bool os_drive_feedback(os_drive *d,bool adc_valid,uint16_t scale,uint16_t slot2,uint16_t slot1,os_pair *feedback);
+bool os_drive_current_checked(os_drive *d,bool enable,bool angle_valid,uint16_t angle,uint16_t scale,os_pair feedback,os_pwm_compare *p);
 bool os_drive_current(os_drive *d,bool enable,bool angle_valid,uint16_t angle,bool adc_valid,
                       uint16_t scale,uint16_t slot2,uint16_t slot1,os_pwm_compare *p);
 #endif

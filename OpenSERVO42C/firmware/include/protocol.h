@@ -15,6 +15,12 @@ uint16_t os_wire_get16(const uint8_t *p);
 uint32_t os_wire_get32(const uint8_t *p);
 void os_wire_put16(uint8_t *p,uint16_t v);
 void os_wire_put32(uint8_t *p,uint32_t v);
+/* Fixed-length configuration records use verified little-endian struct prefixes.
+ * Copy exactly the fields, never trailing padding. */
+void os_wire_copy(void *dst,const void *src,size_t n);
+#define OS_CONFIG_WIRE_BYTES 19u
+#define OS_PID_WIRE_BYTES 18u
+#define OS_MOTION_WIRE_BYTES 17u
 bool os_frame_valid(const uint8_t *in,size_t n);
 size_t os_frame_reply(const uint8_t *in,uint8_t *out,uint8_t len);
 /* Complete frame in, response frame out. Returns zero for malformed frame.

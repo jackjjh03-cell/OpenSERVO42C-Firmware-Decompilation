@@ -24,5 +24,9 @@ int main(void){
     const uint64_t e[]={0,1,2,UINT32_MAX,UINT64_C(1)<<32,INT64_MAX,UINT64_C(1)<<63,UINT64_MAX-1,UINT64_MAX};
     for(unsigned i=0;i<sizeof e/sizeof e[0];i++)for(unsigned j=0;j<sizeof e/sizeof e[0];j++)check(e[i],e[j]);
     for(unsigned i=0;i<100000;i++){uint64_t a=rnd(),b=rnd();check(a,b);check(a,(uint32_t)b);}
+    for(unsigned i=0;i<65536u;i++){
+        check(i,745u+i%3351u);check(UINT32_MAX-i,1u+i%2047u);
+        check((UINT64_C(1)<<63)+i,UINT64_C(1)<< (i%64u));
+    }
     puts("runtime arithmetic passed");return 0;
 }

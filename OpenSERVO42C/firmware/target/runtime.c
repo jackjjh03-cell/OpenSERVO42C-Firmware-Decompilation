@@ -4,7 +4,12 @@
  * callers must reject it before using the result. */
 uint64_t os_udiv32_pair(uint32_t n,uint32_t d){
     uint32_t q=0;
-    if(d)for(unsigned i=32;i--;){if((n>>i)>=d){n-=d<<i;q|=1u<<i;}}
+    if(d&&n>=d){
+        uint32_t bit=1;
+        /* Normalize without overflow; walk only the significant quotient bits. */
+        while(d<=(n>>1)){d<<=1;bit<<=1;}
+        do{if(n>=d){n-=d;q|=bit;}d>>=1;bit>>=1;}while(bit);
+    }
     return ((uint64_t)n<<32)|q;
 }
 uint64_t os_idiv32_pair(int32_t n,int32_t d){
@@ -16,14 +21,14 @@ uint64_t os_idiv32_pair(int32_t n,int32_t d){
     return ((uint64_t)r<<32)|q;
 }
 void os_udiv64(uint64_t n,uint64_t d,uint64_t *out){
-    uint64_t q=0,r=0;
-    if(!d){out[0]=0;out[1]=n;return;}
-    for(unsigned i=0;i<64;i++){
-        uint64_t bit=n>>63; n<<=1;
-        uint64_t carry=r>>63;r=(r<<1)|bit;q<<=1;
-        if(carry||r>=d){r-=d;q|=1u;}
+    uint64_t q=0;
+    if(d&&n>=d){
+        if((n>>32)==0u){uint64_t pair=os_udiv32_pair((uint32_t)n,(uint32_t)d);out[0]=(uint32_t)pair;out[1]=pair>>32;return;}
+        uint64_t bit=1;
+        while(d<=(n>>1)){d<<=1;bit<<=1;}
+        do{if(n>=d){n-=d;q|=bit;}d>>=1;bit>>=1;}while(bit);
     }
-    out[0]=q;out[1]=r;
+    out[0]=q;out[1]=n;
 }
 void os_idiv64(uint64_t n,uint64_t d,uint64_t *out){
     unsigned neg_n=(unsigned)(n>>63),neg_d=(unsigned)(d>>63);

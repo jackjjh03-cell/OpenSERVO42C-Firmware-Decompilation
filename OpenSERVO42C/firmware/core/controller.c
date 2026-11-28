@@ -100,9 +100,13 @@ static void rate_tick(os_controller *c){
     if(direction){
         uint32_t speed=(magnitude(v)+999u)/1000u;
         uint64_t den=2u*(uint64_t)c->motion_cfg.decel;
-        uint64_t stop=((uint64_t)speed*speed+den-1u)/den+(speed+999u)/1000u+1u;
+        uint32_t reserve=(speed+999u)/1000u+1u;
         int64_t room=direction>0?(int64_t)hi-c->command:(int64_t)c->command-lo;
-        if(room<=0||(uint64_t)room<=stop){goal=0;c->requested_rate=0;}
+        /* ceil(speed^2/den)+reserve >= room, without a 64-bit divide.
+         * room is at most UINT32_MAX, den <= 200000000. */
+        if(room<=(int64_t)reserve||(uint64_t)speed*speed>den*(uint64_t)(room-reserve-1)){
+            goal=0;c->requested_rate=0;
+        }
     }
     uint32_t step=magnitude(goal)>magnitude(v)?c->motion_cfg.accel:c->motion_cfg.decel;
     int64_t diff=(int64_t)goal-v;
