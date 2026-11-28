@@ -31,13 +31,29 @@ jobs:
       - name: Link hardware acquisition application (unused sections removed)
         run: python3 OpenSERVO42C/tools/check_target_link.py --bringup --gc-only
 
-      - name: Link optimized acquisition application
-        run: python3 OpenSERVO42C/tools/check_target_link.py --bringup --optimized
+      - name: Link and export unvalidated acquisition application
+        run: |
+          mkdir -p build/open/images
+          python3 OpenSERVO42C/tools/check_target_link.py --bringup --optimized --output build/open/images/BRINGUP-development.hex
 
       # Full-feature motor application requires size optimization. The complete
       # all-module fixture above still checks all target symbols without LTO.
-      - name: Link optimized motor runtime
-        run: python3 OpenSERVO42C/tools/check_target_link.py --motor --optimized
+      - name: Link and export unvalidated motor runtime
+        run: python3 OpenSERVO42C/tools/check_target_link.py --motor --optimized --output build/open/images/MOTOR-development.hex
+
+      - name: Record image provenance and validation limits
+        run: |
+          cd build/open/images
+          printf 'Commit: %s\nDevelopment application images only. Not physically validated.\nDo not mass erase. Retain a complete board-specific backup.\n' "$GITHUB_SHA" > README.txt
+          sha256sum *.hex > SHA256SUMS.txt
+
+      - name: Publish development application images (not a release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: openservo-unvalidated-applications-${{ github.sha }}
+          path: build/open/images/
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Archive exact OpenSERVO42C source
         if: always()
