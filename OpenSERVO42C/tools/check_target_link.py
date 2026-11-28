@@ -31,7 +31,8 @@ def main():
             flags=['-Wall','-Wextra','-Werror','-Wconversion','-Wsign-conversion','-ffreestanding','-fno-builtin','-ffunction-sections','-fdata-sections'] if src.suffix=='.c' else []
             if args.motor and src.name=='bringup_main.c':
                 flags.append('-DOS_MOTOR_RUNTIME=1')
-            if args.optimized and src.suffix=='.c' and src.name!='runtime.c':
+            # Keep the application entry point separate to avoid LTO duplication.
+            if args.optimized and src.suffix=='.c' and src.name not in ('runtime.c','bringup_main.c'):
                 flags.append('-flto')
             subprocess.run([os.getenv('ARM_CLANG','clang'),'--target=arm-none-eabi','-mcpu=cortex-m0plus','-mthumb','-Oz',*flags,'-I',str(FW/'include'),'-c',str(src),'-o',str(obj)],check=True)
             objects.append(str(obj))

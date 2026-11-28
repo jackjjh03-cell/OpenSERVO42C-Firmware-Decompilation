@@ -103,3 +103,6 @@ set_tests_properties(studio_trial_capture PROPERTIES WORKING_DIRECTORY "${CMAKE_
 add_executable(oled_tests tests/oled_tests.c)
 target_link_libraries(oled_tests PRIVATE openservo)
 add_test(NAME oled COMMAND oled_tests)
+
+add_test(NAME studio_calibration COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_calibration.py)
+set_tests_properties(studio_calibration PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
