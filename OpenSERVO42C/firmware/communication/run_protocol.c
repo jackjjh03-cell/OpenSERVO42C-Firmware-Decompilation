@@ -1,9 +1,6 @@
 #include "run_protocol.h"
-static uint16_t get16(const uint8_t *p){return (uint16_t)(p[0]|((uint16_t)p[1]<<8));}
-static uint32_t get32(const uint8_t *p){return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);}
-static void put32(uint8_t *p,uint32_t n){for(unsigned i=0;i<4;i++)p[i]=(uint8_t)(n>>(8u*i));}
 size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t n,uint8_t *out){
-    if(n<8u||in[0]!=0xa5u||in[1]!=0x5au||in[2]!=OS_PROTO_VERSION||in[5]>OS_MAX_PAYLOAD||n!=8u+in[5]||get16(in+n-2)!=os_crc16(in+2,n-4))return 0;
+    if(!os_frame_valid(in,n))return 0;
     uint8_t len=1u,*p=out+6;p[0]=OS_OK;
     os_controller *c=&r->drive.control;
     switch(in[4]){
@@ -24,33 +21,33 @@ size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t 
         break;
     case OS_MOVE_ABS:
         if(in[5]!=4u)p[0]=OS_BAD_LENGTH;
-        else if(!r->enable||!r->gate.enabled||r->drive.pending_fault||!os_start_move(c,(int32_t)get32(in+6)))p[0]=OS_REJECTED;
+        else if(!r->enable||!r->gate.enabled||r->drive.pending_fault||!os_start_move(c,(int32_t)os_wire_get32(in+6)))p[0]=OS_REJECTED;
         break;
     case OS_GET_RUN:
         if(in[5]){p[0]=OS_BAD_LENGTH;break;}
         p[1]=(uint8_t)((r->gate.enabled?1u:0u)|(r->enable?2u:0u)|(r->adc_good?4u:0u)|(r->drive.phase_valid?8u:0u)|(r->teaching?16u:0u)|(c->latest.reference_valid&&!c->position_lost?32u:0u));
-        p[2]=r->drive.pending_fault;put32(p+3,r->last_tick);put32(p+7,r->adc_count);put32(p+11,r->missed_ticks);len=15;break;
+        p[2]=r->drive.pending_fault;os_wire_put32(p+3,r->last_tick);os_wire_put32(p+7,r->adc_count);os_wire_put32(p+11,r->missed_ticks);len=15;break;
     case OS_GET_LIMITS:
         if(in[5]){p[0]=OS_BAD_LENGTH;break;}
-        put32(p+1,(uint32_t)c->limits.minimum);put32(p+5,(uint32_t)c->limits.maximum);p[9]=(uint8_t)c->limits.enabled;len=10;break;
+        os_wire_put32(p+1,(uint32_t)c->limits.minimum);os_wire_put32(p+5,(uint32_t)c->limits.maximum);p[9]=(uint8_t)c->limits.enabled;len=10;break;
     case OS_SET_LIMITS:
         if(in[5]!=9u||in[14]>1u){p[0]=OS_BAD_LENGTH;break;}
-        {os_limits v={(int32_t)get32(in+6),(int32_t)get32(in+10),in[14]!=0u};
+        {os_limits v={(int32_t)os_wire_get32(in+6),(int32_t)os_wire_get32(in+10),in[14]!=0u};
          if(r->teaching||r->enable||r->gate.enabled||!os_set_limits(c,&v))p[0]=OS_REJECTED;}
         break;
     case OS_CONFIRM_REFERENCE:
         if(in[5]!=4u)p[0]=OS_BAD_LENGTH;
-        else if(!os_run_confirm_reference(r,(int32_t)get32(in+6)))p[0]=OS_REJECTED;
+        else if(!os_run_confirm_reference(r,(int32_t)os_wire_get32(in+6)))p[0]=OS_REJECTED;
         break;
     case OS_SET_LIVE_PID:
         if(in[5]!=18u){p[0]=OS_BAD_LENGTH;break;}
-        {os_pid_config v={get32(in+6),get32(in+10),get32(in+14),get32(in+18),get16(in+22)};
+        {os_pid_config v={os_wire_get32(in+6),os_wire_get32(in+10),os_wire_get32(in+14),os_wire_get32(in+18),os_wire_get16(in+22)};
          if(!r->enable||!r->gate.enabled||!r->adc_good||r->drive.pending_fault||!os_set_live_pid(c,&v))p[0]=OS_REJECTED;}
         break;
     case OS_GET_LIVE_PID:
         if(in[5]){p[0]=OS_BAD_LENGTH;break;}
         {const os_pid_config *v=c->live_pid?&c->live_pid_cfg:&c->pid_cfg;
-         p[1]=(uint8_t)c->live_pid;put32(p+2,v->kp);put32(p+6,v->ki);put32(p+10,v->kd);put32(p+14,v->deadband);
+         p[1]=(uint8_t)c->live_pid;os_wire_put32(p+2,v->kp);os_wire_put32(p+6,v->ki);os_wire_put32(p+10,v->kd);os_wire_put32(p+14,v->deadband);
          p[18]=(uint8_t)v->output_limit;p[19]=(uint8_t)(v->output_limit>>8);len=20;}
         break;
     case OS_TEACH_BEGIN:
@@ -60,17 +57,16 @@ size_t os_run_dispatch(os_run *r,const os_board_io *io,const uint8_t *in,size_t 
     case OS_TEACH_CAPTURE:
         if(in[5]!=1u||in[6]>1u){p[0]=OS_BAD_LENGTH;break;}
         {int32_t position;if(!os_run_teach_capture(r,in[6]!=0u,&position))p[0]=OS_REJECTED;
-         else{put32(p+1,(uint32_t)position);len=5;}}
+         else{os_wire_put32(p+1,(uint32_t)position);len=5;}}
         break;
     case OS_TEACH_APPLY:
         if(in[5]!=8u)p[0]=OS_BAD_LENGTH;
-        else if(!os_run_teach_apply(r,get32(in+6),get32(in+10)))p[0]=OS_REJECTED;
+        else if(!os_run_teach_apply(r,os_wire_get32(in+6),os_wire_get32(in+10)))p[0]=OS_REJECTED;
         break;
     case OS_TEACH_CANCEL:
         if(in[5])p[0]=OS_BAD_LENGTH;else os_run_teach_cancel(r);
         break;
     default:return os_dispatch(c,in,n,out);
     }
-    out[0]=0xa5;out[1]=0x5a;out[2]=OS_PROTO_VERSION;out[3]=in[3];out[4]=(uint8_t)(in[4]|0x80u);out[5]=len;
-    uint16_t crc=os_crc16(out+2,4u+len);out[6u+len]=(uint8_t)crc;out[7u+len]=(uint8_t)(crc>>8);return 8u+len;
+    return os_frame_reply(in,out,len);
 }

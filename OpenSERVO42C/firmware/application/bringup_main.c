@@ -58,7 +58,7 @@ void os_target_panic(void){
 /* Runs only in the output-disabled acquisition application. Pause IRQs and
  * DMA during flash activity; the session invalidates the mechanical reference. */
 static size_t storage_request(const uint8_t *in,size_t n,uint8_t *out){
-    if(in[4]!=OS_SAVE_SETTINGS||n!=8u||in[5]||os_crc16(in+2,4)!=(uint16_t)(in[6]|((uint16_t)in[7]<<8)))
+    if(in[4]!=OS_SAVE_SETTINGS||n!=8u||!os_frame_valid(in,n))
         return os_storage_dispatch(&session,&run,&store,false,in,n,out);
     uint32_t m=lock();
     bool en=((REG(0x40020d44u)&128u)!=0u)==(session.enable_high!=0u);

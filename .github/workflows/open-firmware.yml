@@ -30,3 +30,6 @@ jobs:
 
       - name: Link hardware acquisition application
         run: python3 OpenSERVO42C/tools/check_target_link.py --bringup
+
+      - name: Link optimized acquisition application
+        run: python3 OpenSERVO42C/tools/check_target_link.py --bringup --optimized
