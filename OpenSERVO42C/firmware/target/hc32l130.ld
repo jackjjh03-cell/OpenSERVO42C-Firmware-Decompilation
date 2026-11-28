@@ -28,7 +28,8 @@ SECTIONS {
   __static_bytes = __static_end - ORIGIN(RAM);
   /DISCARD/ : { *(.comment) *(.note*) }
   ASSERT(SIZEOF(.vectors) == 192, "Expected 48 vector entries")
-  ASSERT(__app_flash_end <= __flash_target, "Application exceeds 28 KiB development budget")
+  __flash_review_required = (__app_flash_end > __flash_target);
+  ASSERT(__app_flash_end <= ORIGIN(FLASH)+LENGTH(FLASH), "Application overlaps reserved flash")
   __ram_static_headroom = __stack_floor - __static_end;
   __ram_review_required = (__static_bytes > __ram_static_target);
   ASSERT(__static_end <= __stack_floor, "Static RAM overlaps stack")

@@ -13,6 +13,7 @@
 #include "timing.h"
 #include "calibration_check.h"
 #include "trace.h"
+#include "oled.h"
 #ifndef OS_MOTOR_RUNTIME
 #define OS_MOTOR_RUNTIME 0
 #endif
@@ -180,6 +181,8 @@ void os_target_main(void){
     if(!os_uart_init(&uart,&io,hz>>((REG(0x40002000u)>>11)&3u),115200u))os_target_panic();
     encoder=os_hc32_encoder_bus();
     calibration=os_hc32_check_calibration();
+    bool oled=os_oled_init(&io,hz>>((REG(0x40002000u)>>11)&3u));
+    os_oled_buttons buttons={0};os_oled_view view={0};unsigned page=0;uint32_t display_tick=0;
     if(status==OS_BOARD_OK){
         bench.offset1=offsets.slot1;bench.offset2=offsets.slot2;
         flash=os_hc32_settings_flash();store=os_flash_settings_io(&flash);
@@ -246,6 +249,22 @@ void os_target_main(void){
 #else
             if(len){m=lock();(void)os_uart_send(&uart,&io,out,len);unlock(m);}
 #endif
+        }
+        /* Display I/O runs only in the foreground, with IRQs enabled. */
+        uint32_t now_display=ticks;
+        if(oled&&(uint32_t)(now_display-display_tick)>=40u){
+            display_tick=now_display;
+            uint8_t pressed=(uint8_t)(((REG(0x40020d04u)&512u)?0u:1u)|((REG(0x40020d04u)&1024u)?0u:2u)|((REG(0x40020d44u)&16u)?0u:4u));
+            bool old=buttons.diagnostics;os_oled_button_sample(&buttons,pressed);
+            if(old!=buttons.diagnostics)page=0;
+            if(!page){
+                m=lock();const os_controller *c=&run.drive.control;
+                view=(os_oled_view){c->latest.actual,c->faults,adc_errors,bench.encoder_errors,c->latest.load_permille,bench.raw_angle,
+                    (uint8_t)c->state,(uint8_t)c->mode,(uint8_t)status,(uint8_t)((run.reference_confirmed?1u:0u)|(run.gate.enabled?2u:0u)|(run.enable?4u:0u))};
+                unlock(m);
+            }
+            uint8_t pixels[72];os_oled_render(&view,buttons.diagnostics,page,pixels);
+            oled=os_oled_page(&io,page,pixels);page=(page+1u)%5u;
         }
         /* The regular SysTick also wakes an interrupt arriving before WFI. */
         __asm volatile("wfi");

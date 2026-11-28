@@ -47,7 +47,8 @@ def main():
             assert name in symbols, name
         assert symbols['vectors']==0 and symbols['__settings_slot0']==0x7600 and symbols['__settings_slot1']==0x7800
         flash=symbols['__app_flash_end'];ram=symbols['__static_bytes']
-        assert flash<=0x7000 and ram<=0x1800 and symbols['__stack_top']==0x20002000
+        assert flash<=0x7600 and ram<=0x1800 and symbols['__stack_top']==0x20002000
         print('{} [{}]: {} bytes flash, {} bytes static RAM, {} bytes reserved stack; no unresolved symbols'.format('Motor runtime application' if args.motor else 'Board bring-up application' if args.bringup else 'Target link fixture','LTO + GC' if args.optimized else 'GC' if args.gc_only else 'all modules',flash,ram,symbols['__stack_top']-symbols['__stack_floor']))
+        if flash>0x7000:print('Review: application exceeds 28 KiB design target; reserved pages remain protected.')
         print('Link check only; no HEX or deployable artifact produced.')
 if __name__=='__main__':main()

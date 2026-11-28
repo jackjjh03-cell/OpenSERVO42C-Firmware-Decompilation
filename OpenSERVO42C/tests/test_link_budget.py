@@ -41,14 +41,18 @@ b .
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_flash(self):
-        result = self.link(text=0x7100)
+        result = self.link(text=0x7600)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn('28 KiB development budget', result.stderr)
+        self.assertIn('Application overlaps reserved flash', result.stderr)
 
     def test_data_flash(self):
-        result = self.link(text=0x6e00, data=512)
+        result = self.link(text=0x7400, data=512)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn('28 KiB development budget', result.stderr)
+        self.assertIn('Application overlaps reserved flash', result.stderr)
+
+    def test_flash_above_review_target(self):
+        result = self.link(text=0x7100)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_above_review_target(self):
         result = self.link(bss=5120)

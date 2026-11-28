@@ -1,4 +1,5 @@
 #include "board.h"
+#include "oled.h"
 #define R(a) io->read(io->ctx,(a))
 #define W(a,v) io->write(io->ctx,(a),(v))
 #define F(a,m,v) W((a),(R(a)&~(uint32_t)(m))|((uint32_t)(v)&(uint32_t)(m)))
@@ -98,4 +99,9 @@ void os_board_step_init(const os_board_io *io,bool reverse){
     W(c+0x88,reverse?64u:16u);W(c+0x8c,reverse?16u:64u);
     W(c+0x7c,0);F(c+0x68,0x33u,0x33u);F(c,0xffffu,0);
     /* Counter stays stopped until the control owner arms it. */
+}
+
+void os_board_oled_pins(const os_board_io *io){
+    B(GPIO+16u,12,1);pin(io,0,12,32,0);
+    pin(io,192,0,52,1);pin(io,192,1,52,1);
 }
