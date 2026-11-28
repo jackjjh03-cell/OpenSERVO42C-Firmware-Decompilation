@@ -121,5 +121,17 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     assert(os_timing_record(&stats,48000,2000,1000,true)&&stats.peak==49000&&stats.overruns==1);
     assert(!os_timing_record(&stats,48000,100,47900,false)&&stats.overruns==1);
     stats.overruns=UINT32_MAX;assert(os_timing_record(&stats,48000,1000,1000,true)&&stats.overruns==UINT32_MAX);
+    assert(os_run_init(&r,&io,&cfg,&offsets));
+    uint8_t jog=OS_JOG,rate[]={232,3,0,0,50,0};
+    assert(command(&r,&io,OS_SELECT_MODE,&jog,1)==OS_OK);
+    assert(command(&r,&io,OS_SET_RATE,rate,6)==OS_REJECTED);
+    for(unsigned i=0;i<100;i++){adc(&r,&io,true);os_run_tick(&r,&io,i,0,true,0,true,true,false);}
+    assert(command(&r,&io,OS_ARM,0,0)==OS_OK);
+    assert(command(&r,&io,OS_SET_RATE,rate,6)==OS_OK);
+    assert(command(&r,&io,OS_GET_RATE,0,0)==OS_OK);
+    adc(&r,&io,true);os_run_tick(&r,&io,100,0,true,0,true,true,false);
+    assert(r.drive.control.rate_milli==30000&&r.drive.control.jog_ms==49);
+    assert(command(&r,&io,OS_DISABLE,0,0)==OS_OK);closed(&r,&m);
+    assert(!r.drive.control.requested_rate&&!r.drive.control.rate_milli);
     puts("scheduler tests passed");return 0;
 }

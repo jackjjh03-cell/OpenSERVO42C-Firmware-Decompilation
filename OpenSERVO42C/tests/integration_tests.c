@@ -24,5 +24,23 @@ int main(void){
     assert(c.latest.target==5000 && !c.moving);
     os_init(&c);os_motion_config m=c.motion_cfg;m.curve=OS_TRAPEZOID;assert(os_set_motion(&c,&m));
     m.speed=0;assert(!os_set_motion(&c,&m));assert(c.motion_cfg.speed>0);
+    setup(&c,&s,OS_VELOCITY);assert(!os_set_rate(&c,10001,0));assert(!os_set_rate(&c,1000,50));
+    assert(os_set_rate(&c,1000,0));tick(&c,&s,1);assert(c.rate_milli==30000);
+    for(unsigned n=0;n<1000;n++){s.actual=c.latest.target;tick(&c,&s,1);}
+    assert(c.rate_milli==1000000&&c.command>900&&c.command<1000);
+    assert(os_set_rate(&c,-1000,0));tick(&c,&s,1);assert(c.rate_milli==985000);
+    for(unsigned n=0;n<150;n++){s.actual=c.latest.target;tick(&c,&s,1);}
+    assert(c.rate_milli==-1000000);assert(os_set_rate(&c,0,0));
+    for(unsigned n=0;n<100;n++){s.actual=c.latest.target;tick(&c,&s,1);}
+    assert(!c.moving&&c.rate_milli==0);
+    setup(&c,&s,OS_JOG);assert(!os_set_rate(&c,1000,0));assert(os_set_rate(&c,1000,50));
+    for(unsigned n=0;n<200;n++){s.actual=c.latest.target;tick(&c,&s,1);}
+    assert(!c.moving&&!c.jog_ms&&!c.requested_rate);int32_t held=c.command;
+    tick(&c,&s,100);assert(c.command==held);
+    assert(os_set_rate(&c,-1000,50));tick(&c,&s,1);s.enable_input=false;tick(&c,&s,1);
+    assert(c.state==OS_OFF&&!c.rate_milli&&!c.requested_rate&&!c.jog_ms);
+    setup(&c,&s,OS_VELOCITY);c.limits=(os_limits){-100,100,true};assert(os_set_rate(&c,1000,0));
+    for(unsigned n=0;n<300;n++){s.actual=c.latest.target;tick(&c,&s,1);assert(c.command<=100&&c.state==OS_ACTIVE);}
+    assert(!c.moving&&c.command>0);s.actual=101;tick(&c,&s,1);assert(c.faults&OS_F_TRAVEL);
     puts("Controller integration tests passed");return 0;
 }

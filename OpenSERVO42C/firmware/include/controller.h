@@ -35,6 +35,8 @@ typedef struct {
     uint32_t faults, observed, warnings;
     uint16_t stall_ms, follow_ms, healthy_ms, still_ms;
     int32_t command, demand;
+    int32_t requested_rate, rate_milli, rate_remainder;
+    uint16_t jog_ms;
     os_state state;
     os_mode mode;
     bool hal_validated, position_lost, moving;
@@ -50,6 +52,8 @@ bool os_select_mode(os_controller *c, os_mode m);
 bool os_arm(os_controller *c);
 void os_disable(os_controller *c);
 bool os_start_move(os_controller *c,int32_t end);
+/* Signed encoder counts/s. Jog requires a renewable nonzero lease. */
+bool os_set_rate(os_controller *c,int32_t rate,uint16_t lease_ms);
 void os_tick_1ms(os_controller *c, const os_sample *s);
 bool os_acknowledge(os_controller *c);
 #endif

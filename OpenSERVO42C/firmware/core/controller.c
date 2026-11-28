@@ -7,7 +7,7 @@ static uint16_t dwell(uint16_t n, bool condition) {
     return !condition ? 0u : n==UINT16_MAX ? n : (uint16_t)(n+1u);
 }
 static void stop_demand(os_controller *c){
-    c->demand=0;c->moving=false;c->still_ms=0;c->live_pid=false;os_pid_reset(&c->pid);
+    c->demand=0;c->moving=false;c->still_ms=0;c->live_pid=false;c->requested_rate=0;c->rate_milli=0;c->rate_remainder=0;c->jog_ms=0;os_pid_reset(&c->pid);
 }
 void os_init(os_controller *c) {
     *c=(os_controller){0};
@@ -59,8 +59,8 @@ bool os_arm(os_controller *c) {
     if(c->state!=OS_OFF || !c->hal_validated || c->faults ||
        c->position_lost || !c->latest.feedback_valid || !c->latest.enable_input ||
        c->observed || c->healthy_ms<c->cfg.clear_ms ||
-       (c->mode!=OS_CNC && c->mode!=OS_POSITION) ||
-       (c->mode==OS_POSITION && !c->latest.reference_valid) ||
+       (c->mode>OS_JOG) ||
+       (c->mode!=OS_CNC && !c->latest.reference_valid) ||
        (c->limits.enabled && (!c->latest.reference_valid || !within(&c->limits,c->latest.actual)))) return false;
     stop_demand(c);c->command=c->latest.actual;c->motion=(os_motion){0};
     c->state=OS_ACTIVE; return true;
@@ -78,6 +78,47 @@ bool os_start_move(os_controller *c,int32_t end){
     if(!os_motion_plan(&c->motion,c->command,end,&c->motion_cfg))return false;
     c->moving=c->motion.total_ms!=0;return true;
 }
+static bool rate_mode(const os_controller *c){return c->mode==OS_VELOCITY||c->mode==OS_JOG;}
+bool os_set_rate(os_controller *c,int32_t rate,uint16_t lease_ms){
+    if(c->state!=OS_ACTIVE||!rate_mode(c)||!c->latest.reference_valid||!c->latest.feedback_valid||
+       !c->latest.enable_input||c->latest.travel_violation||magnitude(rate)>c->motion_cfg.speed||
+       (c->mode==OS_JOG&&rate&&!lease_ms)||(c->mode==OS_VELOCITY&&lease_ms))return false;
+    c->requested_rate=rate;c->jog_ms=rate?lease_ms:0;return true;
+}
+/* Trapezoidal rate ramp; milli-count/s retains sub-count acceleration.
+ * The position servo follows the integrated command, including at zero speed.
+ * Decelerate before the commanded boundary, with a one-tick reserve. Actual
+ * position violations still trip the controller independently. */
+static void rate_tick(os_controller *c){
+    int32_t v=c->rate_milli;
+    if(c->mode==OS_JOG&&c->jog_ms&&!--c->jog_ms)c->requested_rate=0;
+    int32_t goal=c->requested_rate*1000;
+    if((v>0&&goal<0)||(v<0&&goal>0))goal=0;
+    int32_t direction=v?v:goal;
+    int32_t lo=c->limits.enabled?c->limits.minimum:INT32_MIN;
+    int32_t hi=c->limits.enabled?c->limits.maximum:INT32_MAX;
+    if(direction){
+        uint32_t speed=(magnitude(v)+999u)/1000u;
+        uint64_t den=2u*(uint64_t)c->motion_cfg.decel;
+        uint64_t stop=((uint64_t)speed*speed+den-1u)/den+(speed+999u)/1000u+1u;
+        int64_t room=direction>0?(int64_t)hi-c->command:(int64_t)c->command-lo;
+        if(room<=0||(uint64_t)room<=stop){goal=0;c->requested_rate=0;}
+    }
+    uint32_t step=magnitude(goal)>magnitude(v)?c->motion_cfg.accel:c->motion_cfg.decel;
+    int64_t diff=(int64_t)goal-v;
+    if(diff>(int64_t)step)v+=(int32_t)step;
+    else if(diff<-(int64_t)step)v-=(int32_t)step;
+    else v=goal;
+    int32_t sum=v+c->rate_remainder;
+    int64_t pos=(int64_t)c->command+sum/1000000;
+    c->rate_remainder=sum%1000000;
+    if(pos<=lo||pos>=hi){
+        if(pos<lo)pos=lo;
+        if(pos>hi)pos=hi;
+        if((pos==lo&&v<0)||(pos==hi&&v>0)){v=0;c->rate_remainder=0;c->requested_rate=0;}
+    }
+    c->command=(int32_t)pos;c->rate_milli=v;c->moving=v!=0||c->requested_rate!=0;
+}
 void os_tick_1ms(os_controller *c,const os_sample *s) {
     os_sample sample=*s;
     uint32_t critical=sample.critical & OS_CRITICAL;
@@ -88,6 +129,11 @@ void os_tick_1ms(os_controller *c,const os_sample *s) {
             c->command=os_motion_tick(&c->motion);
             c->moving=c->motion.elapsed_ms<c->motion.total_ms;
         }
+        sample.target=c->command;
+    }
+    if(c->state==OS_ACTIVE&&rate_mode(c)){
+        if(!sample.reference_valid)critical|=OS_F_REFERENCE;
+        if(!critical&&sample.enable_input)rate_tick(c);
         sample.target=c->command;
     }
     if(c->limits.enabled){
