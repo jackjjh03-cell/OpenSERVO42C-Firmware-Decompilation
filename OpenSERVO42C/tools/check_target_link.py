@@ -1,9 +1,10 @@
-"""Link all firmware code with startup/runtime into a non-deployable test ELF."""
+"""Link firmware and optionally export an explicitly unvalidated application HEX."""
 import os
 import argparse
 from pathlib import Path
 import subprocess
 import tempfile
+from export_hex import application_bytes, intel_hex
 ROOT=Path(__file__).resolve().parents[1]
 FW=ROOT/'firmware'
 
@@ -13,12 +14,15 @@ def main():
     parser.add_argument("--motor", action="store_true", help="Link the motor-runtime variant; not deployable")
     parser.add_argument("--optimized", action="store_true", help="Use LTO and section garbage collection for the selected application")
     parser.add_argument("--gc-only", action="store_true", help="Use section garbage collection without LTO")
+    parser.add_argument("--output", type=Path, help="Export unvalidated application HEX; requires optimized application build")
     args=parser.parse_args()
     if args.motor and args.bringup:
         parser.error("choose acquisition or motor runtime")
     application=args.bringup or args.motor
     if (args.optimized or args.gc_only) and not application:
         parser.error("optimized links require --bringup or --motor; retain all modules in the fixture")
+    if args.output and (not application or not args.optimized or args.output.suffix.lower()!=".hex"):
+        parser.error("HEX export requires --motor or --bringup, --optimized and a .hex output path")
     if args.optimized and args.gc_only:
         parser.error("choose one optimization mode")
     with tempfile.TemporaryDirectory() as tmp:
@@ -52,5 +56,13 @@ def main():
         assert flash<=0x7600 and ram<=0x1800 and symbols['__stack_top']==0x20002000
         print('{} [{}]: {} bytes flash, {} bytes static RAM, {} bytes reserved stack; no unresolved symbols'.format('Motor runtime application' if args.motor else 'Board bring-up application' if args.bringup else 'Target link fixture','LTO + GC' if args.optimized else 'GC' if args.gc_only else 'all modules',flash,ram,symbols['__stack_top']-symbols['__stack_floor']))
         if flash>0x7000:print('Review: application exceeds 28 KiB design target; reserved pages remain protected.')
-        print('Link check only; no HEX or deployable artifact produced.')
+        if args.output:
+            data=application_bytes(elf.read_bytes())
+            if max(data)>=flash:
+                raise ValueError('Export exceeds linker application boundary')
+            # Refuse accidental overwrite of a factory backup or previous image.
+            with args.output.open('x',encoding='ascii',newline='\n') as f:f.write(intel_hex(data))
+            print('UNVALIDATED application HEX: {} ({} file-backed bytes). Not a full flash image; never mass erase.'.format(args.output,len(data)))
+        else:
+            print('Link check only; no HEX or deployable artifact produced.')
 if __name__=='__main__':main()

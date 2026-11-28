@@ -1,20 +1,34 @@
 # OpenSERVO42C v0.1.1 — development
-Independent firmware for the stock HC32L130F8UA MKS SERVO42C, based on the original V1.1.3 reconstruction in ../development/factory and ../assembly, not R02.
 
-This first increment is a portable controller/protection core and a versioned wire contract, with host tests. It is **not flashable motor firmware**. No register writes, bridge enabling, or validated electrical protection are present. Do not flash or connect this prototype to a live drive.
+Independent firmware for the stock HC32L130F8UA MKS SERVO42C, based on the original V1.1.3 reconstruction in `../development/factory` and `../assembly`, not R02.
 
-Build and test on a development PC:
+The motor application includes six control modes (CNC, position, velocity, jog, torque and open loop), position and current control, fault protection, travel-limit teaching, persistent configuration, encoder calibration and OLED status/setup controls. Studio supports configuration, motion commands, calibration, diagnostics, recorded PID trials and supervised gain search. Firmware and Studio are development builds: host tests and target links are not evidence of safe physical operation.
+
+## Development build
+
+From the repository root:
+
 ```sh
 cmake -S OpenSERVO42C -B build/open
 cmake --build build/open
 ctest --test-dir build/open --output-on-failure
+python OpenSERVO42C/tests/test_link_budget.py
+python OpenSERVO42C/tools/check_target_link.py --motor --optimized
 ```
-Python tests require Python 3.8+ and no external dependencies. Studio's serial transport and UI are not yet implemented.
 
-See [hardware evidence](docs/hardware.md), [protocol](docs/protocol.md), and [development requirements](docs/requirements.md). The original factory project remains unchanged.
+Host tests require a C compiler, CMake, Python 3.8+ and Tk for Studio queue tests. Target linking requires ARM-capable Clang, LLD and `nm` (overrides: `ARM_CLANG`, `ARM_LLD`, `ARM_NM`). The motor build requires size optimization. The acquisition variant (`--bringup --optimized`) does not authorize motor output.
 
-The portable [motion and PID modules](docs/motion-and-pid.md) now provide trapezoidal and quintic S-curve position trajectories and a fixed-point position regulator. They are integrated with the portable controller and share configuration commands with the Python codec. Physical UART and motor output remain unimplemented.
+An optional `--output path.hex` exports only file-backed application flash from an optimized application link. It refuses existing output files and data outside `0x0000–0x75ff`. It does not create a full device backup or authorize flashing. Before physical testing, retain a complete board-specific flash backup and establish recovery; never use mass erase with an application-only HEX.
 
-The [MT6816 encoder layer](docs/encoder.md) includes a checked SPI decoder, rollover tracker and a separate HC32 register transport awaiting hardware initialization and validation.
+## Studio
 
-[Memory and timing budgets](docs/memory-and-timing.md) · [First powered bench test](docs/bench-validation.md). The new Cortex-M0+ linker layout and synthetic link tests enforce the initial flash budget and stack boundary; the 4 KiB static-RAM target is advisory; the full hardware application has not yet been linked.
+From `OpenSERVO42C`, install the pinned serial dependency and start the GUI:
+
+```sh
+python -m pip install -r studio/requirements.txt
+python -m studio.app
+```
+
+Python 3.8/Tk 8.6 compatibility is intended; Windows 7 has not been independently tested. Serial disable is not an emergency stop. Keep motor output disabled and external EN inactive during settings and LUT programming. Calibration sweeps require an uncoupled motor.
+
+See [hardware evidence](docs/hardware.md), [protocol](docs/protocol.md), [memory and timing budgets](docs/memory-and-timing.md), and [bench validation](docs/bench-validation.md). Older development notes describe earlier implementation stages. The original factory project remains unchanged.
