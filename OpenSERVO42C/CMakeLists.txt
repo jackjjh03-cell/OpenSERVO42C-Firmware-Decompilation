@@ -96,3 +96,6 @@ set_tests_properties(studio_tuning PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT
 
 add_test(NAME studio_tuning_trials COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_tuning_trials.py)
 set_tests_properties(studio_tuning_trials PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_test(NAME studio_trial_capture COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -p test_trial_capture.py)
+set_tests_properties(studio_trial_capture PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")

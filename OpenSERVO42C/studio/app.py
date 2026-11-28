@@ -8,6 +8,8 @@ from tkinter import ttk, messagebox, filedialog
 from . import protocol as p
 from .client import ControllerClient, MODE_NAMES
 from .tuning import analyze
+from .tuning_trials import PROFILES, rank_trials
+from .trial_capture import begin_trial, finish_trial
 
 GROUPS = (
     ("Protection", p.GET_CONFIG, p.SET_CONFIG, ("Following error (counts)", "Stall error (counts)", "Stall speed (counts/s)", "Stall load (permille)", "Fault dwell (ms)", "Clear dwell (ms)", "Policy (0 monitor, 1 warn, 2 protect)")),
@@ -125,6 +127,23 @@ class Studio:
         ttk.Button(tuning,text="Retrieve and analyze",command=self.get_trace).grid(row=4,column=1,sticky="w")
         ttk.Button(tuning,text="Export trace CSV",command=self.export_trace).grid(row=5,column=0,sticky="w")
         ttk.Label(tuning,textvariable=self.trace_text,justify="left",wraplength=850).grid(row=6,column=0,columnspan=3,sticky="w",pady=12)
+        trials = ttk.Frame(tabs, padding=12); tabs.add(trials, text="PID trials")
+        self.trials = []; self.trial_pending = None
+        self.trial_end = self.field(trials, 0, "Test endpoint (absolute counts)", "")
+        self.trial_count = self.field(trials, 1, "Samples (1–160)", "160")
+        self.trial_interval = self.field(trials, 2, "Sample interval (ms)", "10")
+        self.trial_tolerance = self.field(trials, 3, "Settling tolerance (counts)", "16")
+        self.trial_tail = self.field(trials, 4, "Post-move observation (ms)", "200")
+        self.trial_profile = tk.StringVar(value="Balanced")
+        ttk.Label(trials,text="Ranking objective").grid(row=5,column=0,sticky="w")
+        profiles=ttk.Combobox(trials,textvariable=self.trial_profile,values=PROFILES,state="readonly",width=18)
+        profiles.grid(row=5,column=1,sticky="w"); profiles.bind("<<ComboboxSelected>>",lambda _:self.show_trials())
+        ttk.Button(trials,text="Record one test move",command=self.start_trial).grid(row=6,column=0,sticky="w",pady=5)
+        ttk.Button(trials,text="Retrieve completed trial",command=self.retrieve_trial).grid(row=6,column=1,sticky="w")
+        ttk.Button(trials,text="Copy best gains to PID editor",command=self.copy_best_gains).grid(row=7,column=0,sticky="w")
+        ttk.Button(trials,text="Clear trial comparisons",command=self.clear_trials).grid(row=7,column=1,sticky="w")
+        self.trial_text = tk.StringVar(value="Arm position mode at a known starting point with travel limits and protect policy enabled. Record one test move, wait for the trace to finish, disable output, then retrieve. Return to the same start and repeat with other gains. Low effort is not a noise measurement.")
+        ttk.Label(trials,textvariable=self.trial_text,justify="left",wraplength=850).grid(row=8,column=0,columnspan=3,sticky="w",pady=12)
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(50, self.pump)
         self.next_poll = 0
@@ -183,6 +202,8 @@ class Studio:
 
     def on_connected(self, _):
         self.connected = True; self.snapshot = None; self.history.clear()
+        self.trials.clear(); self.trial_pending = None
+        self.trial_text.set('No comparison trials for this connection.')
         self.message.set("Connected. No motor commands sent.")
 
     def disconnect(self):
@@ -256,6 +277,55 @@ class Studio:
     def show_calibration(self, data):
         winding, jump, forward, reverse, flat, flags = data
         self.calibration_text.set("Structural check: {}\nWinding: {} counts\nLargest adjacent change: {} counts\nForward: {}  Reverse: {}  Flat: {}\nMarkers: {}  Half-turn ambiguity: {}\nRead-only check; does not establish physical calibration accuracy.".format("passed" if flags == 3 else "failed",winding,jump,forward,reverse,flat,"valid" if flags&1 else "invalid","yes" if flags&4 else "no"))
+
+    def start_trial(self):
+        if not self.connected or self.future is not None and not self.quiet:
+            self.message.set("Connect and wait for the current transaction."); return
+        if self.trial_pending is not None:
+            self.message.set("Retrieve or clear the previous trial first."); return
+        try:
+            args=tuple(int(v.get()) for v in (self.trial_end,self.trial_count,self.trial_interval,self.trial_tolerance,self.trial_tail))
+        except ValueError:
+            self.message.set("Enter integer trial settings, including a deliberate endpoint."); return
+        if not messagebox.askyesno("Test move","Command one position move to {} counts with the currently applied gains? Verify clearance and the independent hardware stop.".format(args[0])):
+            return
+        def started(capture):
+            self.trial_pending=capture
+            self.trial_text.set("Test move accepted. Wait for trace completion, disable output, then retrieve. No gain changes have been sent.")
+        self.submit(lambda c:begin_trial(c,*args),started)
+
+    def retrieve_trial(self):
+        capture=self.trial_pending
+        if capture is None:
+            self.message.set("Record a test move first."); return
+        def retrieved(trial):
+            try:
+                rank_trials(self.trials+[trial],self.trial_profile.get())
+            except ValueError as exc:
+                self.trial_text.set(str(exc)+". Clear comparisons to start a new group."); return
+            self.trials.append(trial);self.trial_pending=None;self.show_trials()
+        self.submit(lambda c:finish_trial(c,capture),retrieved)
+
+    def show_trials(self):
+        if not self.trials:
+            self.trial_text.set("No eligible trials recorded."); return
+        ranking=rank_trials(self.trials,self.trial_profile.get())
+        lines=["{} eligible trial(s) · {} objective".format(len(self.trials),self.trial_profile.get())]
+        for i,(score,gains,count) in enumerate(ranking[:6]):
+            lines.append("{}: Kp={} Ki={} Kd={} · score {:.3f} · {} run(s)".format(i+1,*gains[:3],score,count))
+        lines.append("Lower score is better. Compare only trials on the same mechanism and load. Recommendation is not a stability guarantee.")
+        self.trial_text.set("\n".join(lines))
+
+    def copy_best_gains(self):
+        if len({t.gains for t in self.trials})<2:
+            self.message.set("Record at least two distinct gain configurations first."); return
+        _,gains,_=rank_trials(self.trials,self.trial_profile.get())[0]
+        self.fill(self.config_vars[1],gains)
+        self.message.set("Best measured gains copied to PID editor only. Review before applying.")
+
+    def clear_trials(self):
+        if messagebox.askyesno("Clear comparisons","Clear recorded comparisons and the pending trial reference? This does not stop the motor or recording."):
+            self.trials.clear();self.trial_pending=None;self.show_trials()
 
     def show_trace_status(self,data):
         count,requested,interval,flags=data
