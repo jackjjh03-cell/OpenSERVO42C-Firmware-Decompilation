@@ -4,7 +4,7 @@ static uint32_t mag(int32_t n){return n<0?0u-(uint32_t)n:(uint32_t)n;}
 static bool cfg_valid(const os_drive_config *v){
     return (v->geometry==25u||v->geometry==50u) && v->microsteps>0u && v->microsteps<=256u &&
         v->max_encoder_delta>0u && v->max_encoder_delta<32768u && v->phase_limit>0u && v->phase_limit<=2047u &&
-        v->current_gain_q11>0u && v->compare_limit>0u && v->compare_limit<=1080u;
+        v->trip_limit>v->phase_limit && v->trip_limit<=4095u && v->current_gain_q11>0u && v->compare_limit>0u && v->compare_limit<=1080u;
 }
 bool os_drive_init(os_drive *d,const os_drive_config *cfg,const os_offsets *offsets){
     *d=(os_drive){0};os_init(&d->control);
@@ -48,6 +48,15 @@ void os_drive_position(os_drive *d,uint16_t angle,bool angle_valid,uint16_t puls
     if(d->control.state!=OS_ACTIVE)d->fast_phase_valid=false;
 }
 bool os_drive_arm(os_drive *d){return d->configured&&d->phase_valid&&!d->pending_fault&&!d->inhibit_requested&&os_arm(&d->control);}
+bool os_drive_confirm_reference(os_drive *d,int32_t position,uint16_t angle,uint16_t pulse){
+    os_controller *c=&d->control;
+    if(!d->configured||c->state!=OS_OFF||c->faults||c->latest.enable_input||!c->latest.feedback_valid||
+       c->observed||c->healthy_ms<c->cfg.clear_ms||c->latest.speed_counts_s!=0||d->pending_fault||d->inhibit_requested)return false;
+    if(!d->encoder.initialized||angle!=d->encoder.previous)return false;
+    d->encoder.position=position;d->pulse_target=position;d->previous_pulse=pulse;d->remainder=0;
+    c->command=position;c->latest.target=position;c->latest.actual=position;c->position_lost=false;
+    d->fast_phase_valid=false;os_pid_reset(&c->pid);return true;
+}
 void os_drive_disable(os_drive *d){d->fast_phase_valid=false;os_disable(&d->control);}
 bool os_drive_current(os_drive *d,bool enable,bool angle_valid,uint16_t angle,bool adc_valid,
                       uint16_t scale,uint16_t slot2,uint16_t slot1,os_pwm_compare *p){
@@ -65,7 +74,7 @@ bool os_drive_current(os_drive *d,bool enable,bool angle_valid,uint16_t angle,bo
     uint32_t a=mag(feedback.a),b=mag(feedback.b),peak=a>b?a:b;
     uint32_t load=peak*1000u/d->cfg.phase_limit;
     d->load=(uint16_t)(load>1000u?1000u:load);
-    if(peak>d->cfg.phase_limit){d->pending_fault|=OS_F_ELECTRICAL;return false;}
+    if(peak>d->cfg.trip_limit){d->pending_fault|=OS_F_ELECTRICAL;return false;}
     int32_t demand=d->control.demand;
     /* Bound requested vector magnitude independently of PID settings. */
     int32_t limit=d->cfg.phase_limit;
