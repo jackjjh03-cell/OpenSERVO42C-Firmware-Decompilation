@@ -39,3 +39,16 @@ jobs:
 
       - name: Link optimized motor runtime
         run: python3 OpenSERVO42C/tools/check_target_link.py --motor --optimized
+
+      - name: Archive exact OpenSERVO42C source
+        if: always()
+        run: git archive --format=zip --output=openservo-source.zip HEAD OpenSERVO42C .github/workflows/open-firmware.yml
+
+      - name: Publish source snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openservo-source-${{ github.sha }}
+          path: openservo-source.zip
+          retention-days: 14
+          if-no-files-found: error
