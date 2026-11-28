@@ -99,5 +99,13 @@ int main(void){mock m={0};os_board_io io={&m,read,write,0,0};os_run r;
     tick(&r,&io,102,false);
     assert(r.drive.control.faults&OS_F_TIMING);
     assert(!r.reference_confirmed&&!r.drive.control.latest.reference_valid&&r.drive.control.position_lost);closed(&r,&m);
+    assert(os_run_init(&r,&io,&cfg,&offsets));
+    for(unsigned i=0;i<100;i++)tick(&r,&io,i,false);
+    adc(&r,&io,false); /* disabled fast IRQ between tick and reference command */
+    assert(!r.drive.inhibit_requested&&os_run_confirm_reference(&r,0));
+    tick(&r,&io,100,false);
+    os_run_adc(&r,&io,false,false,0,true,2000,2048,2048);
+    tick(&r,&io,101,false);
+    assert(r.drive.control.faults&OS_F_ENCODER);assert(!r.reference_confirmed);closed(&r,&m);
     puts("scheduler tests passed");return 0;
 }
